@@ -1,4 +1,4 @@
-# 🎓 AI-Powered Smart Learning Platform
+# 🎓 AI-Driven Personalized Education and Academic Assistance System
 
 > An AI-powered academic intelligence platform that transforms an institution's syllabus, textbooks, notes, previous-year question papers, assignments, and other learning resources into a curriculum-aware AI system for **Teachers and Students**.
 
