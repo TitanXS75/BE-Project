@@ -70,6 +70,137 @@ interface StudentWorkspaceProps {
   onOpenAIModelModal: () => void;
 }
 
+function FormattedMarkdownMessage({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const renderedElements: React.ReactNode[] = [];
+  let inCodeBlock = false;
+  let codeBlockBuffer: string[] = [];
+
+  lines.forEach((line, lineIdx) => {
+    if (line.trim().startsWith("```")) {
+      if (inCodeBlock) {
+        renderedElements.push(
+          <pre
+            key={`code-${lineIdx}`}
+            className="my-3 p-4 rounded-2xl bg-black/80 border border-white/10 text-xs font-mono text-[#30d158] overflow-x-auto"
+          >
+            <code>{codeBlockBuffer.join("\n")}</code>
+          </pre>
+        );
+        codeBlockBuffer = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeBlockBuffer.push(line);
+      return;
+    }
+
+    if (line.startsWith("### ")) {
+      renderedElements.push(
+        <h3 key={lineIdx} className="text-base font-bold text-white mt-4 mb-2 first:mt-0 tracking-tight">
+          {formatInline(line.replace("### ", ""))}
+        </h3>
+      );
+      return;
+    }
+    if (line.startsWith("## ")) {
+      renderedElements.push(
+        <h2 key={lineIdx} className="text-lg font-bold text-white mt-5 mb-2 first:mt-0 tracking-tight">
+          {formatInline(line.replace("## ", ""))}
+        </h2>
+      );
+      return;
+    }
+    if (line.startsWith("# ")) {
+      renderedElements.push(
+        <h1 key={lineIdx} className="text-xl font-bold text-white mt-6 mb-2 first:mt-0 tracking-tight">
+          {formatInline(line.replace("# ", ""))}
+        </h1>
+      );
+      return;
+    }
+
+    const numberedMatch = line.match(/^(\d+)\.\s+(.*)/);
+    if (numberedMatch) {
+      renderedElements.push(
+        <div key={lineIdx} className="flex gap-2.5 my-1.5 ml-1 text-sm text-[#d1d1d6] leading-relaxed">
+          <span className="font-semibold text-[#0071e3] min-w-[20px]">{numberedMatch[1]}.</span>
+          <div className="flex-1">{formatInline(numberedMatch[2])}</div>
+        </div>
+      );
+      return;
+    }
+
+    const bulletMatch = line.match(/^[\*\-]\s+(.*)/);
+    if (bulletMatch) {
+      renderedElements.push(
+        <div key={lineIdx} className="flex gap-2.5 my-1.5 ml-2 text-sm text-[#d1d1d6] leading-relaxed">
+          <span className="text-[#0071e3] font-bold">•</span>
+          <div className="flex-1">{formatInline(bulletMatch[1])}</div>
+        </div>
+      );
+      return;
+    }
+
+    if (!line.trim()) {
+      renderedElements.push(<div key={lineIdx} className="h-2" />);
+      return;
+    }
+
+    renderedElements.push(
+      <p key={lineIdx} className="text-sm text-[#f5f5f7] leading-relaxed my-1 font-normal">
+        {formatInline(line)}
+      </p>
+    );
+  });
+
+  return <div className="space-y-1">{renderedElements}</div>;
+}
+
+function formatInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*.*?\*\*|`.*?`|\*.*?\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let idx = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(
+        <strong key={idx++} className="font-semibold text-white">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(
+        <code key={idx++} className="px-1.5 py-0.5 rounded bg-black/60 border border-white/10 text-[#0071e3] font-mono text-xs">
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      parts.push(
+        <em key={idx++} className="italic text-[#e5e5ea]">
+          {token.slice(1, -1)}
+        </em>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+}
+
 export function StudentWorkspace({
   activeTab,
   activeUnit,
@@ -82,7 +213,7 @@ export function StudentWorkspace({
   copiedIndex,
   onCopy,
   samplePrompts,
-  quizDifficulty,
+  quizDifficulty = "medium",
   setQuizDifficulty,
   quizQuestions,
   selectedAnswers,
@@ -109,81 +240,87 @@ export function StudentWorkspace({
 }: StudentWorkspaceProps) {
   return (
     <div className="h-full flex flex-col">
-      {/* ─── TAB 1: AI TUTOR CHAT ─── */}
+      {/* ─── TAB 1: AI TUTOR CHAT (EXTREME LEFT AND RIGHT) ─── */}
       {activeTab === "chat" && (
-        <div className="max-w-4xl mx-auto w-full h-full flex flex-col justify-between gap-6">
-          <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="w-full h-full flex flex-col justify-between gap-6 px-1 sm:px-2">
+          <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`flex gap-4 ${msg.role === "assistant" ? "items-start" : "items-start flex-row-reverse"}`}
+                className={`w-full flex ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}
               >
-                <div
-                  className={`h-9 w-9 rounded-2xl flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
-                    msg.role === "assistant"
-                      ? "bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20"
-                      : "bg-[#2c2c2e] text-white"
-                  }`}
-                >
-                  {msg.role === "assistant" ? <Sparkles className="h-4 w-4" /> : "You"}
-                </div>
-
-                <div
-                  className={`max-w-2xl rounded-3xl p-6 ${
-                    msg.role === "assistant"
-                      ? "bg-[#161618] border border-white/10 text-white"
-                      : "bg-[#0071e3] text-white"
-                  }`}
-                >
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap font-normal">
-                    {msg.text}
-                  </div>
-
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs text-[#86868b]">
-                      <div className="flex items-center gap-2">
-                        <span>Grounded in:</span>
-                        <span className="font-mono text-[#0071e3]">
-                          {msg.sources.join(", ")}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => onCopy(msg.text, idx)}
-                        className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-                      >
-                        {copiedIndex === idx ? (
-                          <Check className="h-3.5 w-3.5 text-[#30d158]" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                        <span>{copiedIndex === idx ? "Copied" : "Copy"}</span>
-                      </button>
+                {msg.role === "assistant" ? (
+                  <div className="flex gap-3.5 items-start max-w-4xl sm:max-w-5xl w-full">
+                    <div className="h-9 w-9 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                      <Sparkles className="h-4 w-4" />
                     </div>
-                  )}
-                </div>
+
+                    <div className="flex-1 rounded-3xl rounded-tl-md p-6 bg-[#161618] border border-white/10 text-white shadow-xl">
+                      <FormattedMarkdownMessage content={msg.text} />
+
+                      {msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-4 pt-3.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-[#86868b]">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-[#86868b]">Grounded in:</span>
+                            {msg.sources.map((src, sIdx) => (
+                              <span
+                                key={sIdx}
+                                className="px-2 py-0.5 rounded-lg bg-black/60 border border-white/10 font-mono text-[11px] text-[#0071e3]"
+                              >
+                                {src}
+                              </span>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => onCopy(msg.text, idx)}
+                            className="hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-white/5"
+                          >
+                            {copiedIndex === idx ? (
+                              <Check className="h-3.5 w-3.5 text-[#30d158]" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                            <span className="text-xs">{copiedIndex === idx ? "Copied" : "Copy"}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-3 items-start justify-end max-w-2xl">
+                    <div className="rounded-3xl rounded-tr-md px-5 py-3.5 bg-[#0071e3] text-white text-sm leading-relaxed shadow-lg font-medium">
+                      {msg.text}
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-[#2c2c2e] text-white flex items-center justify-center flex-shrink-0 text-xs font-semibold mt-0.5 shadow-sm">
+                      You
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
             {isStreaming && (
-              <div className="flex gap-4 items-start">
-                <div className="h-9 w-9 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-4 w-4 animate-spin" />
-                </div>
-                <div className="p-6 rounded-3xl bg-[#161618] border border-white/10 text-xs text-[#86868b] flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-[#0071e3] animate-ping" />
-                  Generating grounded explanation from syllabus package...
+              <div className="w-full flex justify-start">
+                <div className="flex gap-3.5 items-start max-w-xl">
+                  <div className="h-9 w-9 rounded-2xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20 flex items-center justify-center flex-shrink-0 animate-pulse">
+                    <Sparkles className="h-4 w-4 animate-spin" />
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#161618] border border-white/10 text-xs text-[#86868b] flex items-center gap-2.5 shadow-md">
+                    <div className="h-2 w-2 rounded-full bg-[#0071e3] animate-ping" />
+                    Synthesizing curriculum-grounded explanation...
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 w-full">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 onSendMessage();
               }}
-              className="p-3 rounded-2xl bg-[#161618] border border-white/10 flex items-center gap-3 focus-within:border-[#0071e3] transition-all"
+              className="p-3 rounded-2xl bg-[#161618] border border-white/10 flex items-center gap-3 focus-within:border-[#0071e3] transition-all shadow-xl"
             >
               <input
                 type="text"
