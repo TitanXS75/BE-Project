@@ -1,128 +1,102 @@
 # 🧠 AI & RAG Design
 
-This document covers the Retrieval-Augmented Generation (RAG) pipeline, hybrid search algorithms, agent structures, and system evaluation metrics.
+This document details the local Retrieval-Augmented Generation (RAG) pipeline, local hybrid search, local AI provider integration (Ollama), and offline evaluation metrics.
 
 ---
 
-## 🔍 Retrieval Architecture
+## 🔍 Local Retrieval & Inference Architecture
 
-To prevent hallucination, the system enforces a strict citation-first flow:
+To ensure 100% offline functionality and zero data leakage, the RAG query pipeline executes completely on the user's computer:
 
 ```text
-User Question
+User Question ("Explain overfitting according to Unit 3")
       │
       ▼
-Query Understanding
+Query Understanding (Extract subject, unit, terms)
       │
       ▼
-Subject / Course Identification
+Active Subject Mapping (Point to active imported workspace folder)
       │
       ▼
-Metadata Filtering
+Metadata Filtering (Filter SQLite records by unit/chapter)
       │
       ▼
-Vector Retrieval
+Hybrid Search Execution
+ ├── Vector Search (LanceDB similarity comparison)
+ └── Keyword Search (SQLite FTS5 query)
       │
       ▼
-Keyword / Hybrid Retrieval
+Reciprocal Rank Fusion (RRF) & Reranking (Sort best matches)
       │
       ▼
-Reranking
+Context Prompt Construction (Format context chunks + user question)
       │
       ▼
-Context Construction
+Local LLM Execution (Post prompt to local Ollama service)
       │
       ▼
-LLM
-      │
-      ▼
-Citation / Source Verification
-      │
-      ▼
-Final Answer
+Streaming Response + Source Citation Verification (Match text to SQLite sources)
 ```
 
-1. **Query Parsing:** Identify the target subject, unit, and user intent (e.g., looking for definitions, exam questions, or code examples).
-2. **Metadata Filtering:** Restrict database retrieval strictly to the user's institution, course, and selected subject.
-3. **Retrieval:** Fetch matching document sections using PostgreSQL `pgvector` similarity alongside exact keyword matches.
-4. **Reranking:** Sort chunks using a cross-encoder model to surface the most relevant concepts first.
-5. **LLM Generation:** Feed the top chunks into the LLM alongside clear context boundary guidelines.
-6. **Source Verification:** Match statements in the generated response to the original document citations before returning the answer.
+---
+
+## 📚 RAG Processing Pipeline: Compilation vs. Reading
+
+The platform splits RAG processing into a compilation phase (Teacher Mode) and a reading/query phase (Student Mode).
+
+### 1. Compilation Phase (Teacher Mode)
+* **Ingestion:** Teacher imports files (`PDF`, `DOCX`, `TXT`, etc.).
+* **Semantic Chunking:** Text is split semantically while preserving hierarchy (`Subject ➔ Unit ➔ Section ➔ Chunk`). Chunks keep metadata records (original file name, page numbers, associated units).
+* **Local Embedding Generation:** Chunks are converted into 384-dimensional or 768-dimensional vectors using a fast, local embedding model (e.g., `all-MiniLM-L6-v2` run via ONNX Runtime or local Ollama).
+* **Package Packaging:** Relational records are written to a local SQLite database file, vector indexes are compiled in LanceDB, and everything is packaged into the portable **`.rssh`** container.
+
+### 2. Query Phase (Student Mode)
+* **Instant Mount:** The student imports the `.rssh` package. The app instantly mounts the SQLite database and links the vector store. **No embedding generation or document parsing occurs on the student's machine during import.**
+* **Local Retrieval:** Chunks matching the user's query are fetched instantly from the pre-computed local indexes.
 
 ---
 
-## 📚 RAG Processing Pipeline
+## 🔍 Local Hybrid Search
 
-### 1. Document Ingestion & Extraction
-* The system accepts several formats initially: `PDF`, `DOCX`, `PPTX`, `TXT`, `CSV`, and scanned `Images`.
-* OCR (Optical Character Recognition) is run on image files to extract text, tables, and formula terms.
-
-### 2. Semantic Chunking
-* Avoids splitting raw text blindly by characters.
-* Preserves document hierarchy:
-  `Document -> Chapter -> Section -> Subsection -> Semantic Chunk`
-* Each chunk keeps full context metadata, including the parent unit, page number, and original file name.
-* Ingested chunk format:
-  ```json
-  {
-    "text": "...",
-    "subject_id": "ml-001",
-    "unit": 2,
-    "chapter": "Regression",
-    "page": 42,
-    "source": "ML_Textbook.pdf"
-  }
-  ```
+To deliver high-precision answers on lightweight hardware, we merge two search methodologies:
+1. **Vector Search (Semantic):** Handles conceptual matches (e.g., searching for "regularization" retrieves sections discussing "overfitting prevention" or L1/L2 penalties). Powered locally by **LanceDB** or the **sqlite-vec** extension.
+2. **Keyword Search (Exact):** Uses **SQLite FTS5 (Full-Text Search)** to match exact technical definitions, formulas, acronyms, and question headings inside PYQs.
+3. **Fusion (RRF):** Blends vector similarity and FTS rank scores to produce a single, unified list of high-priority context chunks.
 
 ---
 
-## 🔍 Hybrid Search
+## 🧠 Local AI Backend Structure
 
-We combine vector similarity search with full-text keyword indexing (PostgreSQL TSVector):
-* **Vector Search:** Good at finding conceptual matches (e.g., synonym matching, conceptual explanations).
-* **Keyword Search:** Critical for technical terms, specific formulas, acronyms, or exact question matches from PYQs.
-* **Reciprocal Rank Fusion (RRF):** Merges vector and keyword scores to present the ultimate context list.
-
----
-
-## 🧠 AI Backend Structure
-
-The AI-specific backend logic lives in the following folder structure:
+The AI-specific backend logic lives in the `local-api` app:
 
 ```text
-apps/api/app/
+apps/local-api/app/
 │
 ├── ai/
-│   ├── providers/        # LLM API abstraction (Gemini, OpenAI, local models)
-│   ├── embeddings/       # Vector embedding API wrappers
-│   ├── reranking/        # Cross-encoder Reranker integrations
-│   ├── prompts/          # Dynamic system prompts (tutor, teacher, quizzes)
-│   └── generation/       # Content generators (notes, assignments, PPTs, questions)
+│   ├── providers/        # Client connectors for local Ollama APIs and remote fallback LLMs
+│   ├── embeddings/       # Local embedding generators (ONNX Runtime, sentence-transformers)
+│   ├── prompts/          # Localized system templates (tutor guidelines, quiz formatting, slide generation)
+│   └── generation/       # Offline exporters (generating PPTX, PDF exam papers, revision guides)
 │
 └── rag/
-    ├── ingestion/        # File parsers, OCR engines, chunking algorithms
-    ├── retrieval/        # Hybrid search query builders & RRF
-    ├── context/          # Prompts context window builder
-    └── citations/        # Post-generation citation checkers
+    ├── ingestion/        # Document extraction, table parsers, semantic chunkers
+    ├── retrieval/        # Local LanceDB vector queries + SQLite FTS5 search builders
+    ├── packaging/        # ZIP packaging routines to compile and extract .rssh files
+    └── citations/        # Post-processing string matching to verify Ollama references against SQLite chunks
 ```
 
 ---
 
-## 📊 AI Evaluation Metrics
+## 📊 Local RAG Evaluation Metrics
 
-A RAG pipeline is only as good as its outputs. The platform uses a automated test suite to run evaluations against a ground-truth dataset:
+Because the system runs offline, evaluation scripts run locally against validation datasets to measure accuracy:
 
-### 1. Retrieval Quality
-* **Recall@K:** Did the correct reference text appear in the top K retrieved chunks?
-* **Precision@K:** Are all retrieved chunks relevant to the user query?
-* **MRR (Mean Reciprocal Rank):** How high up in the search results did the correct chunk appear?
+### 1. Retrieval Accuracy
+* **Recall@K:** Check if target textbook paragraphs appear in the top K retrieved chunks.
+* **FTS vs. Vector Balance:** Verify that keyword queries (like formula variables) prioritize FTS results, while conceptual queries prioritize vector results.
 
-### 2. Generation Quality
-* **Faithfulness (Groundedness):** Is the answer fully supported *only* by the retrieved context?
-* **Answer Relevance:** Does the generated text directly answer the user's prompt?
-* **Citation Accuracy:** Do the embedded page numbers and file names match the actual context sources?
+### 2. Local LLM Generation Quality
+* **Groundedness (Faithfulness):** Ensure the answer generated by Qwen, Gemma, Llama, or Mistral contains *only* facts present in the retrieved context chunks.
+* **Constraint Compliance:** Verify that prompts requesting specific answer formats (e.g. "a 5-mark answer" or "explain in 3 bullet points") are correctly formatted by the local model.
+* **Citation Matching:** Verify that page numbers cited in the output match actual page entries in the SQLite chunk records.
 
-### 3. Academic Quality
-* **Syllabus Compliance:** Are generated questions and explanations within the active syllabus?
-* **Bloom's Taxonomy/Marks Suitability:** Does the generated exam question match the targeted cognitive complexity and mark weight?
-``` Sounds perfect. Let's make sure it is exactly in line with user's instructions.

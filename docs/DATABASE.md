@@ -1,98 +1,104 @@
 # 🗄️ Database Design
 
-This document details the relational tables, vector stores, and object storage schema requirements.
+This document details the local relational schemas, local vector storage, local file paths, and the physical structure of the portable **`.rssh`** package.
 
 ---
 
 ## 🗺️ Entity-Relationship Hierarchy
 
-Academic structure coordinates with user roles and resource indexing models:
+Inside the local application, each subject workspace relies on a relational and vector storage model mapped to the active curriculum:
 
-* **Users:** User profiles mapped to specific roles (`SUPER_ADMIN`, `INSTITUTION_ADMIN`, `TEACHER`, `STUDENT`).
-* **Academic Hierarchy:** `Institution` -> `Department` -> `Course` -> `Semester` -> `Subject` -> `Unit`/`Chapter`.
-* **Content:** Subjects link to academic resources like `Syllabus`, `Notes`, `Textbooks`, and `PYQs`.
-* **Vector Index:** Documents partition into `Chunks` which link to high-dimensional `Embeddings`.
-* **Student Activity:** Logs conversations, roadmaps, quiz history, and progress trackers.
+* **Subject Workspace:** Structured as a localized system: `Subject ➔ Unit/Chapter ➔ Documents (Syllabus, Textbooks, Notes, PYQs)`.
+* **RAG Content:** Documents partition into `Chunks` which link to `Embeddings` (stored in the vector index).
+* **Local Student Data:** Stored in a separate user profile database to track local model settings, chat history, quiz attempts, and learning analytics.
 
 ---
 
-## 📡 Relational Schema
+## 📡 Local Database Strategy (SQLite)
+
+To ensure the application runs offline with zero setup, **SQLite** is used as the relational database engine.
+
+### Benefits of SQLite
+* **Zero-Configuration:** Runs as a simple file database, eliminating the need to install or run a PostgreSQL database server.
+* **Portability:** The database file is lightweight and can be zipped directly into the `.rssh` package.
+* **Speed:** Offers sub-millisecond local query lookups for relational metadata and text chunks.
+* **Full-Text Search:** Uses SQLite's native `FTS5` module to perform instant keyword queries.
+
+---
+
+## 💾 The `.rssh` Subject Package Structure
+
+A **Smart Subject Package** (`.rssh`) is a compressed ZIP archive that bundles everything needed to run curriculum RAG queries offline. It contains the following structure:
 
 ```text
-User Roles
- ├── Student
- ├── Teacher
- └── Admin
-
-Academic Hierarchy
-Institution
-   │
-   └── Department
-         │
-         └── Course
-               │
-               └── Semester
-                     │
-                     └── Subject
-                            │
-                            ├── Unit
-                            ├── Chapter
-                            └── Course Outcome
-
-Content Ingestion
-Subject
-   │
-   └── Documents (Syllabus, Notes, Textbook, PYQ, Assignment)
-         │
-         └── Chunks
-               │
-               └── Embeddings
-
-Student Workspace Logs
-Student
-   │
-   ├── Enrollments
-   ├── Conversations
-   ├── Quiz Attempts
-   ├── Assignments
-   ├── Progress
-   └── Study Plans
+Subject-Package.rssh (ZIP archive)
+├── manifest.json            # JSON file describing package metadata
+├── subject.db               # SQLite database file containing relational schema
+└── vectors/                 # Vector index database folder
+    ├── data.lance           # LanceDB index segments (or sqlite-vec data tables)
+    └── metadata.json        # Index properties and dimensions
 ```
 
----
+### 1. `manifest.json` Schema
+Stores package-level metadata used by the app to validate and display the package during import:
+```json
+{
+  "package_id": "sub-101-ml",
+  "subject_name": "Machine Learning",
+  "academic_year": "2026-2027",
+  "version": "1.0.0",
+  "teacher_name": "Dr. Sarah Jenkins",
+  "institution_name": "Department of Computer Science, University of Technology",
+  "compiled_at": "2026-08-16T12:00:00Z",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "embedding_dimension": 384
+}
+```
 
-## 📡 Vector Database Strategy (pgvector)
-
-To minimize operational complexity, the platform uses **PostgreSQL + pgvector** as the vector database rather than a separate cluster (e.g., Pinecone or Qdrant).
-
-### Benefits
-* **ACID Compliance:** Ensures standard operations (deleting a course automatically deletes all of its vector chunks).
-* **Metadata Filtering:** Single SQL query filters on both metadata (`subject_id = 'ml-101'`) and vector distance (`vector <=> query_vector`).
-* **Indexing:** HNSW (Hierarchical Navigable Small World) or IVFFlat indexes are applied to the embedding column to speed up retrieval.
-
----
-
-## 🪣 Object Storage & Media Management
-
-To keep infrastructure costs at **$0**, the platform leverages generous free-tier cloud storage services or self-hosted local options:
-
-### Free Storage Options
-1. **Cloudinary (Free Tier):** Offers 25 Monthly Credits (approx. 25 GB of storage / bandwidth). While mainly used for images, it supports uploading raw documents (PDF, DOCX) and is easy to integrate.
-2. **Cloudflare R2 (Free Tier):** Provides 10 GB of free S3-compatible storage per month with zero egress (download) fees.
-3. **Supabase Storage (Free Tier):** Includes 500 MB of storage, integrated directly with PostgreSQL auth permissions.
-4. **MinIO (Self-Hosted):** Completely free, open-source S3-compatible server that runs inside a local Docker container for development.
-
-### Storage Rules
-* Document uploads are stored under organized paths, e.g., `/institutions/[institution-id]/courses/[course-id]/[document-type]/[filename]`.
-* Direct public access to raw academic documents must be blocked. The backend generates secure, short-lived signed URLs for retrieval.
-* Never store large PDFs directly inside the PostgreSQL database.
+### 2. `subject.db` Relational Tables
+SQLite contains the following core tables:
+* `units`: ID, title, unit_number, description.
+* `chapters`: ID, unit_id, title, chapter_number.
+* `documents`: ID, file_name, file_type (Syllabus, Notes, Textbook, PYQ, Assignment), file_size, chunk_count.
+* `chunks`: ID, document_id, unit_id, chapter_id, text_content, page_number.
+* `pyq_questions`: ID, year, question_text, marks, unit_id, chapter_id.
 
 ---
 
-## ⚡ Background Job Processing & Caching
+## 🪓 Vector Database Strategy (LanceDB / sqlite-vec)
 
-Document chunking and indexing are processed out-of-band to prevent blocking backend API workers.
-* **Worker Stack:** Python worker tasks coordinated using `Redis` and `Celery` or `ARQ`.
-* **Ingestion Flow:**
-  `Upload File -> API saves Document record -> Triggers Worker job -> Worker extracts/chunks/embeds -> Saves chunks to DB.`
-* **Redis Caching:** Used to store frequently queried academic data (e.g., PYQ statistics summaries, standard unit list) to reduce database load.
+Vector index storage runs locally:
+* **LanceDB:** A developer-friendly, serverless vector database written in Rust. It stores vectors directly in flat files (saved in the `vectors/` directory of the `.rssh` archive), enabling fast local vector distance searches (`L2` or `Cosine`).
+* **Alternative (sqlite-vec):** A lightweight SQLite extension that allows vector tables to reside directly inside the same `subject.db` file.
+
+---
+
+## 📁 Local Filesystem Sandbox Storage
+
+When a user imports a package, the application unpacks the `.rssh` contents into the local sandbox folder (e.g., `%APPDATA%\smart-learning\` on Windows).
+
+### Sandbox Layout
+```text
+smart-learning/
+├── app.db                       # Local user settings, downloaded models list, and chat logs
+└── subjects/                    # Extracted subject packages
+    ├── machine-learning/
+    │   ├── manifest.json
+    │   ├── subject.db
+    │   └── vectors/
+    └── data-structures/
+        ├── manifest.json
+        ├── subject.db
+        └── vectors/
+```
+
+* **No cloud storage dependency:** Original textbook files are stored in the local sandbox or kept packaged. Raw PDFs are not stored inside SQLite to prevent file bloat.
+* **Signed packages:** Digital signature files may be added to `manifest.json` to prevent students from modifying the underlying databases.
+
+---
+
+## ⚡ Background Tasks
+Because the application runs on a single user's desktop, we replace Celery and Redis with simple in-app asynchronous tasks.
+* **Ingestion Worker:** Python `asyncio` background tasks handle text extraction and vector generation.
+* **Progress Tracking:** The FastAPI backend pushes chunking and embedding progress to the Tauri frontend in real-time via WebSockets or polling, allowing teachers to monitor package creation.
+
