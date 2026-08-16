@@ -20,6 +20,8 @@ export interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   backButtonText?: string;
   nextButtonText?: string;
   disableStepIndicators?: boolean;
+  onFirstStepBack?: () => void;
+  firstStepBackButtonText?: string;
   renderStepIndicator?: (props: {
     step: number;
     currentStep: number;
@@ -41,6 +43,8 @@ export default function Stepper({
   backButtonText = 'Back',
   nextButtonText = 'Continue',
   disableStepIndicators = false,
+  onFirstStepBack,
+  firstStepBackButtonText = 'Exit to Home',
   renderStepIndicator,
   ...rest
 }: StepperProps) {
@@ -64,6 +68,8 @@ export default function Stepper({
     if (currentStep > 1) {
       setDirection(-1);
       updateStep(currentStep - 1);
+    } else if (currentStep === 1 && onFirstStepBack) {
+      onFirstStepBack();
     }
   };
 
@@ -125,12 +131,23 @@ export default function Stepper({
 
         {!isCompleted && (
           <div className={`footer-container ${footerClassName}`}>
-            <div className={`footer-nav ${currentStep !== 1 ? 'spread' : 'end'}`}>
-              {currentStep !== 1 && (
+            <div className={`footer-nav ${currentStep !== 1 || onFirstStepBack ? 'spread' : 'end'}`}>
+              {currentStep === 1 ? (
+                onFirstStepBack ? (
+                  <button
+                    type="button"
+                    onClick={onFirstStepBack}
+                    className="back-button"
+                    {...backButtonProps}
+                  >
+                    {firstStepBackButtonText}
+                  </button>
+                ) : null
+              ) : (
                 <button
                   type="button"
                   onClick={handleBack}
-                  className={`back-button ${currentStep === 1 ? 'inactive' : ''}`}
+                  className="back-button"
                   {...backButtonProps}
                 >
                   {backButtonText}
