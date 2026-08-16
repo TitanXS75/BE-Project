@@ -1,0 +1,74 @@
+# ==============================================================================
+# 🎓 AXIOM: AI-Based Curriculum-Aware Learning & Teaching System
+# Full Developer Initialization & Dependencies Specification
+# ==============================================================================
+#
+# 🚀 QUICK INITIALIZATION COMMANDS (FOR NEW DEVELOPERS):
+# ------------------------------------------------------------------------------
+# 1. CLONE & NAVIGATE:
+#    git clone https://github.com/TitanXS75/BE-Project.git
+#    cd BE-Project
+#
+# 2. PYTHON VIRTUAL ENVIRONMENT & BACKEND SETUP:
+#    # Windows (PowerShell / Command Prompt):
+#    python -m venv venv
+#    .\venv\Scripts\activate
+#    pip install --upgrade pip
+#    pip install -r requirements.txt
+#
+#    # macOS / Linux:
+#    python3 -m venv venv
+#    source venv/bin/activate
+#    pip install --upgrade pip
+#    pip install -r requirements.txt
+#
+# 3. NODE & FRONTEND WEB SETUP:
+#    npm install
+#
+# 4. RUN SERVERS:
+#    # Terminal 1 - Local FastAPI Backend API (Port 8000):
+#    cd apps/local-api
+#    python -m uvicorn app.main:app --reload --port 8000
+#
+#    # Terminal 2 - Next.js 16 Web Application (Port 7575):
+#    cd apps/web
+#    npm run dev
+#
+#    # Terminal 3 (Optional) - Local Ollama Model Daemon:
+#    ollama serve
+#    ollama pull qwen2.5-coder:7b
+#    ollama pull llama3.2:3b
+#
+# ------------------------------------------------------------------------------
+# 🌐 URL REFERENCE:
+# Web Application:       http://localhost:7575
+# Backend API:           http://127.0.0.1:8000
+# Swagger API Docs:      http://127.0.0.1:8000/docs
+# ReDoc Specification:   http://127.0.0.1:8000/redoc
+# ==============================================================================
+
+# --- Core Web API Framework ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+python-multipart>=0.0.19
+
+# --- HTTP & Async Networking ---
+httpx>=0.28.0
+aiofiles>=24.1.0
+
+# --- Database & Vector Storage ---
+aiosqlite>=0.20.0
+numpy>=2.0.0
+
+# --- Document Parsing & Export Engines ---
+pypdf>=5.1.0
+python-docx>=1.1.2
+python-pptx>=1.0.2
+jinja2>=3.1.4
+
+# --- Testing & Quality Assurance ---
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0

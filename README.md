@@ -16,13 +16,13 @@ Unlike traditional generic AI models or cloud-based "chat with PDF" apps, this p
                   │
                   ▼
     [Subject Package: Subject.rssh] ───(Shared via USB, LAN, or Cloud)───┐
-                                                                        │
-                                                                        ▼
-                                                              [Student Imports Package]
-                                                                        │
-                                                                        ▼
-                                                            [Runs Local AI via Ollama]
-                                                          (Qwen, Gemma, Llama, Mistral)
+                                                                         │
+                                                                         ▼
+                                                               [Student Imports Package]
+                                                                         │
+                                                                         ▼
+                                                             [Runs Local AI via Ollama]
+                                                           (Qwen, Gemma, Llama, Mistral)
 ```
 
 1. **Teacher Mode (Subject Packaging):** A teacher imports course documents (syllabus, books, notes, assignments, previous year question papers - PYQs) and packages them into a portable, structured Subject Knowledge Package with the **`.rssh`** extension.

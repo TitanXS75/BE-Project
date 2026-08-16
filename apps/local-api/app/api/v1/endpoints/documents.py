@@ -4,26 +4,26 @@ from pathlib import Path
 import shutil
 import uuid
 from app.config import settings
+from app.rag.ingestion.pipeline import IngestionPipeline
 
 router = APIRouter()
 
 
-@router.post("/upload", summary="Upload course document to subject")
+@router.post("/upload", summary="Upload and ingest course document to subject")
 async def upload_document(
     subject_id: str = Form(...),
     doc_type: str = Form(...),  # Syllabus, Textbook, Notes, PYQ, Assignment
     unit_id: Optional[str] = Form(None),
     file: UploadFile = File(...)
 ):
-    """Uploads a PDF/DOCX/TXT file for ingestion into the subject workspace."""
+    """Uploads a PDF/TXT document and runs automated text extraction, semantic chunking, and LanceDB vector indexing."""
     subject_dir = settings.SUBJECTS_DIR / subject_id
-    if not subject_dir.exists():
-        subject_dir.mkdir(parents=True, exist_ok=True)
+    subject_dir.mkdir(parents=True, exist_ok=True)
         
     docs_dir = subject_dir / "raw_documents"
     docs_dir.mkdir(parents=True, exist_ok=True)
     
-    file_id = str(uuid.uuid4())
+    file_id = str(uuid.uuid4())[:8]
     saved_filename = f"{file_id}_{file.filename}"
     target_path = docs_dir / saved_filename
     
@@ -31,17 +31,27 @@ async def upload_document(
         with open(target_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
+        # Execute Ingestion Pipeline
+        pipeline = IngestionPipeline(subject_id=subject_id)
+        result = await pipeline.process_document(
+            file_path=target_path,
+            doc_type=doc_type,
+            unit_id=unit_id
+        )
+
         return {
-            "status": "uploaded",
-            "document_id": file_id,
+            "status": "ingested",
+            "document_id": result["document_id"],
             "filename": file.filename,
             "doc_type": doc_type,
             "unit_id": unit_id,
-            "size_bytes": target_path.stat().st_size,
+            "pages_extracted": result["pages_extracted"],
+            "chunks_created": result["chunks_created"],
+            "vectors_indexed": result["vectors_indexed"],
             "path": str(target_path)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process and ingest document: {str(e)}")
 
 
 @router.get("/{subject_id}/list", summary="List raw documents in a subject")

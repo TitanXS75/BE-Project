@@ -1,85 +1,72 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
+from app.ai.teacher.exam_builder import ExamPaperBuilder
+from app.ai.teacher.pyq_analyzer import PYQTrendAnalyzer
+from app.ai.teacher.slide_generator import LectureSlideGenerator
 
 router = APIRouter()
 
 
 class QuestionPaperRequest(BaseModel):
     subject_id: str
+    exam_title: str = "Final Examination"
     total_marks: int = 100
     duration_minutes: int = 180
-    blooms_distribution: Optional[dict] = {
+    blooms_distribution: Optional[Dict[str, int]] = {
         "Remember": 20,
         "Understand": 30,
         "Apply": 30,
         "Analyze": 20
     }
-    units_included: Optional[List[int]] = None
+    units_included: Optional[List[str]] = None
 
 
 class LectureSlidesRequest(BaseModel):
     subject_id: str
-    unit_id: int
+    unit_title: str = "Unit 3: Core Foundations"
     topic: str
-    target_slides_count: int = 10
+    target_slides_count: int = 5
 
 
 @router.post("/question-papers", summary="Generate a balanced examination question paper")
 async def generate_question_paper(payload: QuestionPaperRequest):
-    """Generates an exam question paper according to curriculum blueprint and Bloom's taxonomy."""
-    return {
-        "status": "generated",
-        "subject_id": payload.subject_id,
-        "total_marks": payload.total_marks,
-        "sections": [
-            {
-                "section": "Section A (Short Answer - 2 Marks each)",
-                "marks_per_question": 2,
-                "questions_count": 10,
-                "taxonomy": "Remember / Understand"
-            },
-            {
-                "section": "Section B (Medium Answer - 5 Marks each)",
-                "marks_per_question": 5,
-                "questions_count": 6,
-                "taxonomy": "Understand / Apply"
-            },
-            {
-                "section": "Section C (Long Answer / Case Study - 10 Marks each)",
-                "marks_per_question": 10,
-                "questions_count": 5,
-                "taxonomy": "Apply / Analyze / Evaluate"
-            }
-        ]
-    }
+    """Generates a complete exam question paper mapped to syllabus units and Bloom's taxonomy."""
+    try:
+        builder = ExamPaperBuilder(subject_id=payload.subject_id)
+        result = await builder.generate_exam_paper(
+            exam_title=payload.exam_title,
+            total_marks=payload.total_marks,
+            duration_minutes=payload.duration_minutes,
+            units_included=payload.units_included,
+            blooms_weights=payload.blooms_distribution
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate exam paper: {str(e)}")
 
 
-@router.post("/presentations", summary="Generate lecture presentation outline (.pptx structure)")
+@router.post("/presentations", summary="Generate lecture presentation (.pptx file)")
 async def generate_presentation_outline(payload: LectureSlidesRequest):
-    """Generates structured presentation slide deck outline."""
-    return {
-        "status": "ready",
-        "topic": payload.topic,
-        "slides_count": payload.target_slides_count,
-        "slides": [
-            {"slide_number": 1, "title": f"Introduction to {payload.topic}", "bullet_points": ["Key definitions", "Real-world motivation", "Learning objectives"]},
-            {"slide_number": 2, "title": "Core Architecture & Principles", "bullet_points": ["System components", "Data flow", "Standard patterns"]},
-            {"slide_number": 3, "title": "Key Mathematical / Conceptual Foundations", "bullet_points": ["Formulas and theory", "Worked examples", "Common pitfalls"]},
-            {"slide_number": 4, "title": "Summary & Exam Review", "bullet_points": ["Key takeaways", "Common PYQ trends", "Practice exercises"]}
-        ]
-    }
+    """Generates structured presentation and exports a real .pptx PowerPoint file."""
+    try:
+        gen = LectureSlideGenerator(subject_id=payload.subject_id)
+        result = await gen.generate_presentation(
+            topic=payload.topic,
+            unit_title=payload.unit_title,
+            target_slides=payload.target_slides_count
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate lecture presentation: {str(e)}")
 
 
 @router.get("/pyq-trends/{subject_id}", summary="Analyze topic recurrence and predicted questions")
 async def get_pyq_trends(subject_id: str):
     """Returns frequency analysis of recurring questions and high-yield chapters."""
-    return {
-        "subject_id": subject_id,
-        "high_yield_units": [
-            {"unit": 1, "name": "Foundations", "historical_marks_weightage_pct": 25},
-            {"unit": 3, "name": "Core Algorithms", "historical_marks_weightage_pct": 35},
-            {"unit": 4, "name": "Applications & Optimization", "historical_marks_weightage_pct": 25},
-            {"unit": 2, "name": "Mathematical Frameworks", "historical_marks_weightage_pct": 15}
-        ]
-    }
+    try:
+        analyzer = PYQTrendAnalyzer(subject_id=subject_id)
+        result = await analyzer.analyze_trends()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze PYQ trends: {str(e)}")
