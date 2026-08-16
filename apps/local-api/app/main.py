@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.api.v1.router import api_router
+from app.api.v1.endpoints.packages import ensure_default_subjects_seeded
 
 
 @asynccontextmanager
@@ -11,6 +12,10 @@ async def lifespan(app: FastAPI):
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
     settings.SUBJECTS_DIR.mkdir(parents=True, exist_ok=True)
     settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        await ensure_default_subjects_seeded()
+    except Exception as e:
+        print(f"Warning: Failed to seed default subjects: {e}")
     print(f"🚀 {settings.APP_NAME} started on {settings.HOST}:{settings.PORT}")
     print(f"📁 Local Sandbox Storage: {settings.DATA_DIR}")
     yield

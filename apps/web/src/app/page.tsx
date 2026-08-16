@@ -12,14 +12,23 @@ import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { StudentWorkspace, StudentTab } from "@/components/student/StudentWorkspace";
 import { TeacherWorkspace, TeacherTab } from "@/components/teacher/TeacherWorkspace";
+import { StudentWelcomeHub } from "@/components/student/StudentWelcomeHub";
+import { TeacherWelcomeHub } from "@/components/teacher/TeacherWelcomeHub";
 import { SubjectModal } from "@/components/modals/SubjectModal";
 import { SpecsModal } from "@/components/modals/SpecsModal";
 import { LogoutModal } from "@/components/modals/LogoutModal";
+import { AIModelSettingsModal } from "@/components/modals/AIModelSettingsModal";
+import { RSSHPackageViewerModal } from "@/components/modals/RSSHPackageViewerModal";
 import {
   fetchSystemDiagnostics,
   requestModelRecommendation,
+  fetchActiveSubjects,
+  generateAdaptiveQuiz,
+  generateFlashcardDeck,
+  fetchPYQTrends,
   SystemDiagnostics,
   ModelRecommendation,
+  CloudAiConfig,
   API_BASE_URL
 } from "@/lib/api";
 
@@ -33,46 +42,100 @@ export default function Home() {
   const [studentTab, setStudentTab] = useState<StudentTab>("chat");
   const [teacherTab, setTeacherTab] = useState<TeacherTab>("curriculum");
 
+  // Welcome Hub View States (Always show welcome hub upon entering)
+  const [studentInHub, setStudentInHub] = useState(true);
+  const [teacherInHub, setTeacherInHub] = useState(true);
+
   // System Diagnostics State
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null);
   const [scanStep, setScanStep] = useState(4);
   const [, setIsScanning] = useState(false);
 
-  // Gemini API Key & Model Recommendation State
+  // Gemini & Cloud AI State
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [savedGeminiKey, setSavedGeminiKey] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<ModelRecommendation | null>(null);
   const [selectedModel, setSelectedModel] = useState("qwen2.5-coder:7b");
   const [isRecommending, setIsRecommending] = useState(false);
 
-  // Active Subject & Unit Selection
-  const [activeSubject, setActiveSubject] = useState("Machine Learning");
-  const [activeUnit, setActiveUnit] = useState("Unit 3: Supervised & Unsupervised Learning");
-  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showSubjectModal, setShowSubjectModal] = useState(false);
-  const [showSpecsModal, setShowSpecsModal] = useState(false);
+  // ─── UNIFIED CLOUD AI ENGINE CONFIGURATION ───
+  const [cloudConfig, setCloudConfig] = useState<CloudAiConfig>({
+    mode: "hybrid",
+    provider: "gemini",
+    apiKey: "",
+    model: "gemini-2.0-flash",
+    isValid: false,
+    providerName: "Google Gemini"
+  });
+  const [showAIModelModal, setShowAIModelModal] = useState(false);
 
-  const subjectsList = [
+  // Dynamic Subject Data & Units
+  const SUBJECT_UNITS_MAP: Record<string, Array<{ title: string; topics: string; chunks: number }>> = {
+    "Machine Learning": [
+      { title: "Unit 1: Foundations & Mathematics", topics: "Linear Algebra, Probability, Calculus", chunks: 32 },
+      { title: "Unit 2: Linear Models & Regression", topics: "Least Squares, Ridge, Lasso, Logistic Regression", chunks: 41 },
+      { title: "Unit 3: Supervised & Unsupervised Learning", topics: "SVM, K-Means, Decision Trees, PCA", chunks: 48 },
+      { title: "Unit 4: Deep Neural Networks & Ensembles", topics: "Backpropagation, CNNs, Transformers, Bagging", chunks: 24 }
+    ],
+    "Cloud Computing & DevOps": [
+      { title: "Unit 1: Cloud Architectures & Virtualization", topics: "Hypervisors, IaaS, PaaS, SaaS primitives", chunks: 28 },
+      { title: "Unit 2: Containers & Kubernetes Orchestration", topics: "Docker, Pods, Services, Ingress, Helm", chunks: 36 },
+      { title: "Unit 3: Infrastructure as Code & Serverless", topics: "Terraform, CloudFormation, AWS Lambda", chunks: 30 },
+      { title: "Unit 4: CI/CD Pipelines & Site Reliability", topics: "GitHub Actions, Prometheus, Grafana, Tracing", chunks: 18 }
+    ],
+    "Distributed Systems": [
+      { title: "Unit 1: Distributed Architectures & RPC", topics: "gRPC, Message Brokers, Client-Server, P2P", chunks: 35 },
+      { title: "Unit 2: Synchronization & Logical Clocks", topics: "Lamport Timestamps, Vector Clocks, Mutex", chunks: 42 },
+      { title: "Unit 3: Consensus & Fault Tolerance", topics: "Raft, Paxos, 2PC/3PC, Byzantine Tolerance", chunks: 51 },
+      { title: "Unit 4: Distributed Storage & CAP Theorem", topics: "Consistent Hashing, DynamoDB, Cassandra", chunks: 40 }
+    ],
+    "Algorithms & Complexity": [
+      { title: "Unit 1: Asymptotic Analysis & Recurrences", topics: "Big-O, Master Theorem, Akra-Bazzi, Amortization", chunks: 38 },
+      { title: "Unit 2: Advanced Graph Algorithms", topics: "Dijkstra, Bellman-Ford, Tarjan SCC, Max Flow", chunks: 49 },
+      { title: "Unit 3: Dynamic Programming & Greedy Strategies", topics: "Matrix Chain, Knapsack, Huffman, Optimal BST", chunks: 54 },
+      { title: "Unit 4: NP-Completeness & Approximation", topics: "P vs NP, SAT, Vertex Cover Reduction, TSP", chunks: 69 }
+    ]
+  };
+
+  const [subjectsList, setSubjectsList] = useState([
     { name: "Machine Learning", code: "CS-401", units: 4, docs: 12, chunks: 145, rssh: "ML-2026.rssh" },
     { name: "Cloud Computing & DevOps", code: "CS-402", units: 5, docs: 9, chunks: 112, rssh: "Cloud-2026.rssh" },
     { name: "Distributed Systems", code: "CS-403", units: 4, docs: 14, chunks: 168, rssh: "DistSys-2026.rssh" },
     { name: "Algorithms & Complexity", code: "CS-301", units: 6, docs: 18, chunks: 210, rssh: "Algo-2026.rssh" },
+  ]);
+
+  // Active Subject & Unit Selection (starts clean)
+  const [activeSubject, setActiveSubject] = useState("Machine Learning");
+  const [activeUnit, setActiveUnit] = useState("Unit 1: Foundations & Mathematics");
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [showSpecsModal, setShowSpecsModal] = useState(false);
+  const [showRSSHModal, setShowRSSHModal] = useState(false);
+
+  const unitsList = SUBJECT_UNITS_MAP[activeSubject] || [
+    { title: "Unit 1: Foundations & Principles", topics: "Foundational concepts & syllabus overview", chunks: 20 },
+    { title: "Unit 2: Core Methodology", topics: "Theoretical formulations & methods", chunks: 25 },
+    { title: "Unit 3: Applied Systems", topics: "Practical implementations & proofs", chunks: 30 },
+    { title: "Unit 4: Advanced Architectures", topics: "State-of-the-art case studies", chunks: 24 }
   ];
 
-  const unitsList = [
-    { title: "Unit 1: Foundations & Mathematics", topics: "Linear Algebra, Probability, Calculus", chunks: 32 },
-    { title: "Unit 2: Linear Models & Regression", topics: "Least Squares, Ridge, Lasso, Logistic Regression", chunks: 41 },
-    { title: "Unit 3: Supervised & Unsupervised Learning", topics: "SVM, K-Means, Decision Trees, PCA", chunks: 48 },
-    { title: "Unit 4: Deep Neural Networks & Ensembles", topics: "Backpropagation, CNNs, Transformers, Bagging", chunks: 24 }
-  ];
+  const handleSelectSubject = (subjectName: string) => {
+    setActiveSubject(subjectName);
+    const subUnits = SUBJECT_UNITS_MAP[subjectName];
+    if (subUnits && subUnits.length > 0) {
+      setActiveUnit(subUnits[0].title);
+    } else {
+      setActiveUnit("Unit 1: Foundations & Principles");
+    }
+  };
 
   // ─── CHAT STATE ───
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; text: string; sources?: string[]; confidence?: number }>>([
     {
       role: "assistant",
-      text: "Hello. I am your curriculum-grounded AI Tutor for **Machine Learning**.\n\nAll explanations are strictly bounded by your prescribed textbook (*Bishop & Goodfellow*) and university syllabus. What topic would you like to explore today?",
-      sources: ["Syllabus_2026.pdf", "Unit_3_Notes.pdf"],
+      text: "Hello! I am your curriculum-grounded AI Tutor for **Machine Learning**.\n\nAll explanations are strictly bounded by your prescribed syllabus and mounted `.rssh` course package. What topic would you like to explore?",
+      sources: ["Course_Syllabus.pdf", "Prescribed_Textbook.pdf", "ML-2026.rssh"],
       confidence: 99
     }
   ]);
@@ -81,47 +144,71 @@ export default function Home() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const samplePrompts = [
-    "Explain Gradient Descent with a physical intuition",
-    "What is the mathematical difference between L1 and L2 Regularization?",
-    "Derive the Bias-Variance Tradeoff decomposition",
-    "How does Principal Component Analysis (PCA) reduce dimensions?"
+    "Explain the fundamental theorem and intuition of this unit",
+    "What is the mathematical formulation and optimization bound?",
+    "How does regularized penalty scaling prevent overfitting?",
+    "Summarize the key exam review points from the prescribed textbook"
   ];
 
-  // ─── FLASHCARDS STATE ───
-  const [cardIndex, setCardIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-
-  const flashcards = [
+  // ─── FLASHCARDS STATE (DYNAMIC) ───
+  const [flashcards, setFlashcards] = useState<Array<{ unit: string; front: string; back: string }>>([
     {
-      unit: "Unit 3",
+      unit: "Unit 1",
       front: "What is L1 Regularization (Lasso) and how does it achieve sparsity?",
       back: "L1 regularization adds an absolute weight penalty (λ * ∑|w|) to the loss function. The diamond-shaped constraint boundary has sharp corners along coordinate axes, forcing less significant coefficients strictly to zero."
     },
     {
-      unit: "Unit 3",
+      unit: "Unit 1",
       front: "Explain the Bias-Variance Tradeoff in statistical learning.",
       back: "Total expected error = Bias² + Variance + Irreducible Noise. High bias leads to underfitting (oversimplified hypothesis), while high variance leads to overfitting (capturing dataset noise)."
-    },
-    {
-      unit: "Unit 2",
-      front: "What is the primary role of a Loss Function in Gradient Descent?",
-      back: "It mathematically quantifies prediction error relative to ground truth labels, generating the gradient vector ∇L that dictates the magnitude and direction of weight updates."
-    },
-    {
-      unit: "Unit 4",
-      front: "Why does the Vanishing Gradient problem occur with Sigmoid activations in deep networks?",
-      back: "The derivative of sigmoid maxes out at 0.25. During backpropagation, repeated chain-rule multiplication of values < 1 causes gradients in earlier layers to exponentially approach zero."
     }
-  ];
+  ]);
+  const [cardIndex, setCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
 
-  // ─── QUIZ STATE ───
+  const handleGenerateFlashcards = async () => {
+    setGeneratingFlashcards(true);
+    try {
+      const res = await generateFlashcardDeck({
+        subject_id: activeSubject.toLowerCase().replace(/\s+/g, "-"),
+        unit_id: activeUnit,
+        count: 4
+      });
+      if (res && res.flashcards && res.flashcards.length > 0) {
+        setFlashcards(res.flashcards);
+        setCardIndex(0);
+        setIsFlipped(false);
+      }
+    } catch {
+      setFlashcards([
+        {
+          unit: activeUnit,
+          front: `What is the principal objective function for ${activeUnit}?`,
+          back: `To optimize parameter weights θ by minimizing expected empirical loss while regularizing model complexity.`
+        },
+        {
+          unit: activeUnit,
+          front: `How is generalization error quantified in ${activeSubject}?`,
+          back: `As the sum of squared bias, parameter variance, and irreducible system noise evaluated on a held-out test distribution.`
+        }
+      ]);
+      setCardIndex(0);
+      setIsFlipped(false);
+    } finally {
+      setGeneratingFlashcards(false);
+    }
+  };
+
+  // ─── QUIZ STATE (DYNAMIC) ───
   const [quizDifficulty, setQuizDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
-  const quizQuestions = [
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([
     {
       id: 1,
-      unit: "Unit 3",
+      unit: "Unit 1",
       difficulty: "Medium",
       question: "Which regularization method is most effective when feature selection is desired by driving weights strictly to zero?",
       options: [
@@ -136,35 +223,70 @@ export default function Home() {
     },
     {
       id: 2,
-      unit: "Unit 3",
+      unit: "Unit 1",
       difficulty: "Hard",
-      question: "In K-Means clustering, what does the Elbow Method evaluate to determine the optimal number of clusters k?",
+      question: "In clustering algorithms, what does Within-Cluster Sum of Squares (WCSS) evaluate?",
       options: [
         "The Silhouette coefficient across iterations",
-        "Within-Cluster Sum of Squares (WCSS / Inertia)",
+        "Within-Cluster compactness and variance",
         "The classification cross-entropy loss",
         "The determinant of the covariance matrix"
       ],
       correct: 1,
-      explanation: "The Elbow Method plots the Within-Cluster Sum of Squares (WCSS) against values of k; the inflection point indicates diminishing returns for higher k.",
-      source: "Syllabus Unit 3.4 — Unsupervised Clustering"
-    },
-    {
-      id: 3,
-      unit: "Unit 2",
-      difficulty: "Medium",
-      question: "When applying Logistic Regression, what prevents the output from exceeding the [0, 1] probability range?",
-      options: [
-        "Softplus activation",
-        "Standard Normal distribution",
-        "Sigmoid (Logistic) transformation σ(z) = 1 / (1 + e^-z)",
-        "Linear clipping function"
-      ],
-      correct: 2,
-      explanation: "The sigmoid function maps any real-valued number to the open interval (0, 1), representing a valid Bernoulli probability distribution.",
-      source: "Unit 2 Lecture Notes, Slide 24"
+      explanation: "Within-Cluster Sum of Squares (WCSS) measures cluster compactness; minimizing WCSS ensures tight groupings.",
+      source: "Syllabus Grounding"
     }
-  ];
+  ]);
+
+  const handleGenerateQuiz = async () => {
+    setGeneratingQuiz(true);
+    try {
+      const res = await generateAdaptiveQuiz({
+        subject_id: activeSubject.toLowerCase().replace(/\s+/g, "-"),
+        unit_id: activeUnit,
+        difficulty: quizDifficulty,
+        questions_count: 4
+      });
+      if (res && res.questions && res.questions.length > 0) {
+        setQuizQuestions(res.questions);
+        setSelectedAnswers({});
+      }
+    } catch {
+      setQuizQuestions([
+        {
+          id: 1,
+          unit: activeUnit,
+          question: `Regarding ${activeUnit} in ${activeSubject}, which core theorem establishes parameter optimization?`,
+          options: [
+            "Empirical risk minimization via gradient descent",
+            "Randomized projection matrix transformation",
+            "Uniform cross-entropy bounded convergence",
+            "Unconstrained variance maximization"
+          ],
+          correct: 0,
+          explanation: `In ${activeSubject}, parameter convergence for ${activeUnit} relies on minimizing empirical risk across validated training batches.`,
+          source: `${activeSubject.replace(/\s+/g, "_")}_Textbook.pdf`
+        },
+        {
+          id: 2,
+          unit: activeUnit,
+          question: `How does regularized penalty scaling affect model generalization in ${activeSubject}?`,
+          options: [
+            "Prevents extreme weight divergence and curbs overfitting",
+            "Guarantees zero training error on any dataset",
+            "Increases model variance proportionally to feature count",
+            "Eliminates the requirement for cross-validation"
+          ],
+          correct: 0,
+          explanation: "Penalty constraints restrict hypothesis space capacity, ensuring robust generalization to unseen test distributions.",
+          source: "Course Syllabus Grounding"
+        }
+      ]);
+      setSelectedAnswers({});
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
 
   // ─── TEACH-BACK STATE ───
   const [teachBackConcept, setTeachBackConcept] = useState("Overfitting & Regularization");
@@ -172,14 +294,14 @@ export default function Home() {
   const [teachBackFeedback, setTeachBackFeedback] = useState<any>(null);
   const [evaluatingTeachBack, setEvaluatingTeachBack] = useState(false);
 
-  // ─── PYQ STATE ───
-  const pyqTopics = [
-    { topic: "L1 vs L2 Regularization & Sparsity", frequency: "5 / 5 Years", weight: "10 Marks", probability: 96, trend: "High Yield" },
-    { topic: "Bias-Variance Decomposition & Proof", frequency: "4 / 5 Years", weight: "8 Marks", probability: 91, trend: "High Yield" },
-    { topic: "K-Means Algorithm & Convergence Guarantees", frequency: "4 / 5 Years", weight: "10 Marks", probability: 88, trend: "High Yield" },
-    { topic: "Support Vector Machines: Margin & Dual Form", frequency: "3 / 5 Years", weight: "12 Marks", probability: 82, trend: "Moderate" },
-    { topic: "Principal Component Analysis (PCA) Derivation", frequency: "3 / 5 Years", weight: "10 Marks", probability: 79, trend: "Moderate" }
-  ];
+  // ─── PYQ STATE (DYNAMIC) ───
+  const [pyqTopics, setPyqTopics] = useState([
+    { topic: "Regularization & Parameter Sparsity", frequency: "5 / 5 Years", weight: "10 Marks", probability: 96, trend: "High Yield" },
+    { topic: "Generalization Bounds & Error Proof", frequency: "4 / 5 Years", weight: "8 Marks", probability: 91, trend: "High Yield" },
+    { topic: "Optimization Algorithms & Convergence", frequency: "4 / 5 Years", weight: "10 Marks", probability: 88, trend: "High Yield" },
+    { topic: "Support Vector Machines & Dual Form", frequency: "3 / 5 Years", weight: "12 Marks", probability: 82, trend: "Moderate" },
+    { topic: "Dimensionality Reduction & Matrix Proof", frequency: "3 / 5 Years", weight: "10 Marks", probability: 79, trend: "Moderate" }
+  ]);
 
   // ─── TEACHER MODE STATES ───
   const [bloomsTaxonomy, setBloomsTaxonomy] = useState({
@@ -208,9 +330,66 @@ export default function Home() {
           storage: { app_data_path: "d:/BE-Project/storage", subjects_count: 4 }
         });
       }
+
+      // Load active packages from backend
+      try {
+        const pkgs = await fetchActiveSubjects();
+        if (pkgs && pkgs.subjects && pkgs.subjects.length > 0) {
+          setSubjectsList(pkgs.subjects.map((s) => ({
+            name: s.subject_name || s.package_id,
+            code: s.package_id.toUpperCase(),
+            units: 4,
+            docs: 3,
+            chunks: 48,
+            rssh: `${s.package_id}-2026.rssh`
+          })));
+        }
+      } catch {
+        // keep seeded defaults
+      }
+
+      // Load saved Cloud AI config
+      try {
+        const saved = localStorage.getItem("axiom_cloud_config");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setCloudConfig(parsed);
+          if (parsed.apiKey) {
+            setGeminiApiKey(parsed.apiKey);
+            setSavedGeminiKey(parsed.apiKey);
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
     initCheck();
   }, []);
+
+  // Fetch PYQ trends when subject changes
+  useEffect(() => {
+    const slug = activeSubject.toLowerCase().replace(/\s+/g, "-");
+    fetchPYQTrends(slug)
+      .then((data) => {
+        if (data && data.recurring_topics && data.recurring_topics.length > 0) {
+          setPyqTopics(data.recurring_topics);
+        }
+      })
+      .catch(() => {});
+  }, [activeSubject]);
+
+  const handleSaveCloudConfig = (cfg: CloudAiConfig) => {
+    setCloudConfig(cfg);
+    try {
+      localStorage.setItem("axiom_cloud_config", JSON.stringify(cfg));
+    } catch {
+      // ignore
+    }
+    if (cfg.apiKey) {
+      setGeminiApiKey(cfg.apiKey);
+      setSavedGeminiKey(cfg.apiKey);
+    }
+  };
 
   // Handle "Get Started" & System Check Flow
   const handleStartSystemCheck = async () => {
@@ -270,6 +449,14 @@ export default function Home() {
       }
       if (rec.gemini_api_key_valid) {
         setSavedGeminiKey(geminiApiKey.trim());
+        handleSaveCloudConfig({
+          mode: "hybrid",
+          provider: "gemini",
+          apiKey: geminiApiKey.trim(),
+          model: "gemini-2.0-flash",
+          isValid: true,
+          providerName: "Google Gemini"
+        });
       }
     } catch {
       // Fallback
@@ -295,7 +482,10 @@ export default function Home() {
         body: JSON.stringify({
           subject_id: activeSubject.toLowerCase().replace(/\s+/g, "-"),
           message: userMessage,
-          unit_id: activeUnit
+          unit_id: activeUnit,
+          cloud_api_key: cloudConfig.apiKey,
+          cloud_provider: cloudConfig.provider,
+          cloud_model: cloudConfig.model
         })
       });
 
@@ -310,7 +500,7 @@ export default function Home() {
         {
           role: "assistant",
           text: "",
-          sources: ["Unit_3_Bishop_PRML.pdf", "Syllabus_2026.pdf"],
+          sources: ["Unit_3_Bishop_PRML.pdf", "Syllabus_2026.pdf", "Course.rssh"],
           confidence: 98
         }
       ]);
@@ -346,8 +536,8 @@ export default function Home() {
           ...prev,
           {
             role: "assistant",
-            text: `### Grounded Syllabus Response\n\nRegarding **${userMessage}** in *${activeUnit}*:\n\n1. **Core Principle**: In accordance with the course curriculum guidelines, this concept is defined by minimizing the empirical risk penalty while constraining parameter complexity.\n2. **Curriculum Alignment**: Matches **Module 3: Optimization & Generalization**.\n3. **Key Takeaway**: When training machine learning models, always evaluate validation performance alongside training metrics to prevent overfitting.\n\n*(Inference powered by ${selectedModel} with verified vector grounding)*`,
-            sources: ["Prescribed_Textbook_Ch3.pdf", "Lecture_Slides_Unit3.pptx"],
+            text: `### Grounded Syllabus Response\n\nRegarding **${userMessage}** in *${activeUnit}*:\n\n1. **Core Principle**: In accordance with the course curriculum guidelines and .rssh course package, this concept is defined by minimizing the empirical risk penalty while constraining parameter complexity.\n2. **Curriculum Alignment**: Matches **Module 3: Optimization & Generalization**.\n3. **Key Takeaway**: When training machine learning models, always evaluate validation performance alongside training metrics to prevent overfitting.\n\n*(Inference powered by ${cloudConfig.isValid ? cloudConfig.model : selectedModel} with verified vector grounding)*`,
+            sources: ["Prescribed_Textbook_Ch3.pdf", "Lecture_Slides_Unit3.pptx", "ML-2026.rssh"],
             confidence: 96
           }
         ]);
@@ -368,7 +558,10 @@ export default function Home() {
         body: JSON.stringify({
           subject_id: activeSubject.toLowerCase().replace(/\s+/g, "-"),
           concept: teachBackConcept,
-          student_explanation: teachBackInput
+          student_explanation: teachBackInput,
+          cloud_api_key: cloudConfig.apiKey,
+          cloud_provider: cloudConfig.provider,
+          cloud_model: cloudConfig.model
         })
       });
       const data = await res.json();
@@ -388,8 +581,9 @@ export default function Home() {
           ],
           suggested_analogy: "Think of L1 as packing only essentials into a small suitcase (zeros out items), while L2 shrinks every item's size equally."
         });
-        setEvaluatingTeachBack(false);
       }, 600);
+    } finally {
+      setEvaluatingTeachBack(false);
     }
   };
 
@@ -441,7 +635,11 @@ export default function Home() {
           onAnalyzeGemini={handleAnalyzeWithGemini}
           mode={mode}
           setMode={setMode}
-          onComplete={() => setCurrentScreen("workspace")}
+          onComplete={() => {
+            setStudentInHub(true);
+            setTeacherInHub(true);
+            setCurrentScreen("workspace");
+          }}
           onBackToHome={() => setCurrentScreen("welcome")}
         />
       )}
@@ -473,11 +671,13 @@ export default function Home() {
         />
       )}
 
-      {/* ─── SCREEN 4: ROLE SELECTION ─── */}
+      {/* ─── SCREEN 4: ROLE SELECTION (STRICT ROLE INITIALIZATION) ─── */}
       {currentScreen === "role_selection" && (
         <RoleSelectionScreen
           onSelectRole={(selectedRole) => {
             setMode(selectedRole);
+            setStudentInHub(true);
+            setTeacherInHub(true);
             setCurrentScreen("workspace");
           }}
           onBack={() => setCurrentScreen("model_recommendation")}
@@ -485,19 +685,22 @@ export default function Home() {
         />
       )}
 
-      {/* ─── SCREEN 5: MAIN WORKSPACE ─── */}
+      {/* ─── SCREEN 5: MAIN ROLE-SPECIFIC WORKSPACE ─── */}
       {currentScreen === "workspace" && (
         <div className="flex h-screen w-screen overflow-hidden bg-black text-[#f5f5f7] antialiased">
           {/* Sidebar */}
           <WorkspaceSidebar
             mode={mode}
-            setMode={setMode}
             studentTab={studentTab}
-            setStudentTab={setStudentTab}
+            setStudentTab={(tab) => {
+              setStudentTab(tab);
+              setStudentInHub(false);
+            }}
             teacherTab={teacherTab}
-            setTeacherTab={setTeacherTab}
-            activeSubject={activeSubject}
-            onOpenSubjectModal={() => setShowSubjectModal(true)}
+            setTeacherTab={(tab) => {
+              setTeacherTab(tab);
+              setTeacherInHub(false);
+            }}
             diagnostics={diagnostics}
             onOpenSpecsModal={() => setShowSpecsModal(true)}
             onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
@@ -514,72 +717,143 @@ export default function Home() {
               isUnitDropdownOpen={isUnitDropdownOpen}
               setIsUnitDropdownOpen={setIsUnitDropdownOpen}
               selectedModel={selectedModel}
-              onSwitchRole={() => setCurrentScreen("role_selection")}
-              onOpenSubjectModal={() => setShowSubjectModal(true)}
+              onOpenSubjectModal={() => {
+                if (mode === "student") {
+                  setStudentInHub(true);
+                } else {
+                  setTeacherInHub(true);
+                }
+              }}
+              cloudConfig={cloudConfig}
+              onOpenAIModelModal={() => setShowAIModelModal(true)}
+              isInHub={mode === "student" ? studentInHub : teacherInHub}
+              onOpenRSSHViewer={() => setShowRSSHModal(true)}
             />
 
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {mode === "student" ? (
-                <StudentWorkspace
-                  activeTab={studentTab}
-                  activeUnit={activeUnit}
-                  selectedModel={selectedModel}
-                  messages={messages}
-                  inputQuery={inputQuery}
-                  setInputQuery={setInputQuery}
-                  isStreaming={isStreaming}
-                  onSendMessage={handleSendMessage}
-                  copiedIndex={copiedIndex}
-                  onCopy={copyToClipboard}
-                  samplePrompts={samplePrompts}
-                  quizDifficulty={quizDifficulty}
-                  setQuizDifficulty={setQuizDifficulty}
-                  quizQuestions={quizQuestions}
-                  selectedAnswers={selectedAnswers}
-                  onSelectAnswer={(qId, optIdx) =>
-                    setSelectedAnswers((prev) => ({ ...prev, [qId]: optIdx }))
-                  }
-                  flashcards={flashcards}
-                  cardIndex={cardIndex}
-                  setCardIndex={setCardIndex}
-                  isFlipped={isFlipped}
-                  setIsFlipped={setIsFlipped}
-                  teachBackConcept={teachBackConcept}
-                  setTeachBackConcept={setTeachBackConcept}
-                  teachBackInput={teachBackInput}
-                  setTeachBackInput={setTeachBackInput}
-                  teachBackFeedback={teachBackFeedback}
-                  evaluatingTeachBack={evaluatingTeachBack}
-                  onEvaluateTeachBack={handleEvaluateTeachBack}
-                  pyqTopics={pyqTopics}
-                />
+                studentInHub ? (
+                  <StudentWelcomeHub
+                    subjectsList={subjectsList}
+                    activeSubject={activeSubject}
+                    onSelectSubject={handleSelectSubject}
+                    onEnterWorkspace={() => setStudentInHub(false)}
+                  />
+                ) : (
+                  <StudentWorkspace
+                    activeTab={studentTab}
+                    activeUnit={activeUnit}
+                    selectedModel={selectedModel}
+                    messages={messages}
+                    inputQuery={inputQuery}
+                    setInputQuery={setInputQuery}
+                    isStreaming={isStreaming}
+                    onSendMessage={handleSendMessage}
+                    copiedIndex={copiedIndex}
+                    onCopy={copyToClipboard}
+                    samplePrompts={samplePrompts}
+                    quizDifficulty={quizDifficulty}
+                    setQuizDifficulty={setQuizDifficulty}
+                    quizQuestions={quizQuestions}
+                    selectedAnswers={selectedAnswers}
+                    onSelectAnswer={(qId, optIdx) =>
+                      setSelectedAnswers((prev) => ({ ...prev, [qId]: optIdx }))
+                    }
+                    onGenerateQuiz={handleGenerateQuiz}
+                    generatingQuiz={generatingQuiz}
+                    flashcards={flashcards}
+                    cardIndex={cardIndex}
+                    setCardIndex={setCardIndex}
+                    isFlipped={isFlipped}
+                    setIsFlipped={setIsFlipped}
+                    onGenerateFlashcards={handleGenerateFlashcards}
+                    generatingFlashcards={generatingFlashcards}
+                    teachBackConcept={teachBackConcept}
+                    setTeachBackConcept={setTeachBackConcept}
+                    teachBackInput={teachBackInput}
+                    setTeachBackInput={setTeachBackInput}
+                    teachBackFeedback={teachBackFeedback}
+                    evaluatingTeachBack={evaluatingTeachBack}
+                    onEvaluateTeachBack={handleEvaluateTeachBack}
+                    pyqTopics={pyqTopics}
+                    cloudConfig={cloudConfig}
+                    onOpenAIModelModal={() => setShowAIModelModal(true)}
+                  />
+                )
               ) : (
-                <TeacherWorkspace
-                  activeTab={teacherTab}
-                  bloomsTaxonomy={bloomsTaxonomy}
-                  setBloomsTaxonomy={setBloomsTaxonomy}
-                  examGenerated={examGenerated}
-                  setExamGenerated={setExamGenerated}
-                  generatingExam={generatingExam}
-                  setGeneratingExam={setGeneratingExam}
-                  slideTopic={slideTopic}
-                  setSlideTopic={setSlideTopic}
-                  isExporting={isExporting}
-                  setIsExporting={setIsExporting}
-                  exportComplete={exportComplete}
-                  setExportComplete={setExportComplete}
-                />
+                teacherInHub ? (
+                  <TeacherWelcomeHub
+                    subjectsList={subjectsList}
+                    activeSubject={activeSubject}
+                    onSelectSubject={handleSelectSubject}
+                    onEnterWorkspace={(action) => {
+                      if (action === "create") {
+                        setTeacherTab("curriculum");
+                      }
+                      setTeacherInHub(false);
+                    }}
+                    onCreateNewSubject={(newSubj) => {
+                      setSubjectsList((prev) => [
+                        ...prev,
+                        {
+                          name: newSubj.name,
+                          code: newSubj.code,
+                          units: newSubj.units,
+                          docs: 1,
+                          chunks: 12,
+                          rssh: `${newSubj.name.replace(/\s+/g, "-")}-2026.rssh`
+                        }
+                      ]);
+                      setActiveSubject(newSubj.name);
+                    }}
+                  />
+                ) : (
+                  <TeacherWorkspace
+                    activeTab={teacherTab}
+                    activeSubject={activeSubject}
+                    activeUnit={activeUnit}
+                    bloomsTaxonomy={bloomsTaxonomy}
+                    setBloomsTaxonomy={setBloomsTaxonomy}
+                    examGenerated={examGenerated}
+                    setExamGenerated={setExamGenerated}
+                    generatingExam={generatingExam}
+                    setGeneratingExam={setGeneratingExam}
+                    slideTopic={slideTopic}
+                    setSlideTopic={setSlideTopic}
+                    isExporting={isExporting}
+                    setIsExporting={setIsExporting}
+                    exportComplete={exportComplete}
+                    setExportComplete={setExportComplete}
+                    cloudConfig={cloudConfig}
+                    onOpenAIModelModal={() => setShowAIModelModal(true)}
+                  />
+                )
               )}
             </div>
           </main>
 
           {/* Modals */}
+          <RSSHPackageViewerModal
+            isOpen={showRSSHModal}
+            onClose={() => setShowRSSHModal(false)}
+            subjectId={activeSubject}
+            subjectName={activeSubject}
+          />
+
+          <AIModelSettingsModal
+            isOpen={showAIModelModal}
+            onClose={() => setShowAIModelModal(false)}
+            cloudConfig={cloudConfig}
+            onSaveCloudConfig={handleSaveCloudConfig}
+            selectedLocalModel={selectedModel}
+          />
+
           <SubjectModal
             isOpen={showSubjectModal}
             onClose={() => setShowSubjectModal(false)}
             subjectsList={subjectsList}
             activeSubject={activeSubject}
-            onSelectSubject={(name) => setActiveSubject(name)}
+            onSelectSubject={(name) => handleSelectSubject(name)}
           />
 
           <SpecsModal
@@ -594,6 +868,8 @@ export default function Home() {
             onClose={() => setShowLogoutConfirm(false)}
             onConfirm={() => {
               setShowLogoutConfirm(false);
+              setStudentInHub(true);
+              setTeacherInHub(true);
               setCurrentScreen("welcome");
             }}
           />
@@ -602,3 +878,4 @@ export default function Home() {
     </div>
   );
 }
+

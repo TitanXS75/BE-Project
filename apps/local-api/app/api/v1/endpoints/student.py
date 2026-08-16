@@ -25,6 +25,9 @@ class TeachBackEvaluationRequest(BaseModel):
     subject_id: str
     concept: str
     student_explanation: str
+    cloud_api_key: Optional[str] = None
+    cloud_provider: Optional[str] = "gemini"
+    cloud_model: Optional[str] = None
 
 
 class FlashcardDeckRequest(BaseModel):
@@ -73,7 +76,10 @@ async def evaluate_teach_back(payload: TeachBackEvaluationRequest):
         evaluator = TeachBackEvaluator(subject_id=payload.subject_id)
         result = await evaluator.evaluate_explanation(
             concept=payload.concept,
-            student_explanation=payload.student_explanation
+            student_explanation=payload.student_explanation,
+            cloud_api_key=payload.cloud_api_key,
+            cloud_provider=payload.cloud_provider,
+            cloud_model=payload.cloud_model
         )
         return result
     except Exception as e:

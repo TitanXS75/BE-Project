@@ -3,9 +3,7 @@ import {
   GraduationCap,
   BookOpen,
   Layers,
-  ChevronDown,
   Sparkles,
-  FileQuestion,
   UserCheck,
   TrendingUp,
   Upload,
@@ -18,38 +16,38 @@ import {
 import { AxiomLogo } from "../AxiomLogo";
 import { StudentTab } from "../student/StudentWorkspace";
 import { TeacherTab } from "../teacher/TeacherWorkspace";
-import { SystemDiagnostics } from "@/lib/api";
+import { SystemDiagnostics, CloudAiConfig } from "@/lib/api";
 
 interface WorkspaceSidebarProps {
   mode: "student" | "teacher";
-  setMode: (mode: "student" | "teacher") => void;
   studentTab: StudentTab;
   setStudentTab: (tab: StudentTab) => void;
   teacherTab: TeacherTab;
   setTeacherTab: (tab: TeacherTab) => void;
-  activeSubject: string;
-  onOpenSubjectModal: () => void;
+  activeSubject?: string;
+  onOpenSubjectModal?: () => void;
   diagnostics: SystemDiagnostics | null;
   onOpenSpecsModal: () => void;
   onOpenLogoutConfirm: () => void;
+  cloudConfig?: CloudAiConfig;
+  onOpenAIModelModal?: () => void;
+  selectedModel?: string;
 }
 
 export function WorkspaceSidebar({
   mode,
-  setMode,
   studentTab,
   setStudentTab,
   teacherTab,
   setTeacherTab,
-  activeSubject,
-  onOpenSubjectModal,
   diagnostics,
   onOpenSpecsModal,
   onOpenLogoutConfirm
 }: WorkspaceSidebarProps) {
+
   return (
     <aside className="w-80 flex-shrink-0 border-r border-white/[0.08] bg-[#121214] flex flex-col justify-between z-20">
-      <div className="p-5 flex flex-col gap-6 overflow-y-auto">
+      <div className="p-5 flex flex-col gap-5 overflow-y-auto">
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2">
           <AxiomLogo className="h-9 w-9" />
@@ -61,65 +59,57 @@ export function WorkspaceSidebar({
           </div>
         </div>
 
-        {/* Apple Segmented Mode Toggle */}
-        <div className="apple-segmented-container flex text-sm">
-          <button
-            onClick={() => setMode("student")}
-            className={`flex-1 py-2 rounded-xl font-medium transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              mode === "student" ? "apple-segmented-active" : "text-[#86868b] hover:text-white"
-            }`}
-          >
-            <GraduationCap className="h-4 w-4" />
-            Student
-          </button>
-          <button
-            onClick={() => setMode("teacher")}
-            className={`flex-1 py-2 rounded-xl font-medium transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              mode === "teacher" ? "apple-segmented-active" : "text-[#86868b] hover:text-white"
-            }`}
-          >
-            <BookOpen className="h-4 w-4" />
-            Teacher
-          </button>
-        </div>
-
-        {/* Active Subject Selector */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider px-2">
-            Mounted Subject
-          </span>
-          <button
-            onClick={onOpenSubjectModal}
-            className="w-full text-left p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/[0.06] hover:border-white/20 transition-all cursor-pointer group flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-black flex items-center justify-center text-white">
-                <Layers className="h-4 w-4 text-[#0071e3]" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white truncate max-w-[150px]">
-                  {activeSubject}
-                </p>
-                <p className="text-xs text-[#86868b]">4 Units • 145 Chunks</p>
-              </div>
+        {/* ─── ROLE-SPECIFIC IDENTITY CARD (NO ARBITRARY SWITCHER) ─── */}
+        <div className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/[0.08] flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div
+              className={`h-9 w-9 rounded-xl flex items-center justify-center ${
+                mode === "student"
+                  ? "bg-[#0071e3]/15 text-[#0071e3] border border-[#0071e3]/20"
+                  : "bg-[#ff9f0a]/15 text-[#ff9f0a] border border-[#ff9f0a]/20"
+              }`}
+            >
+              {mode === "student" ? (
+                <GraduationCap className="h-5 w-5" />
+              ) : (
+                <BookOpen className="h-5 w-5" />
+              )}
             </div>
-            <ChevronDown className="h-4 w-4 text-[#86868b]" />
-          </button>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-white">
+                  {mode === "student" ? "Student Workspace" : "Teacher Studio"}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#86868b]">
+                {mode === "student" ? "Learner Profile • Active" : "Faculty Profile • Active"}
+              </p>
+            </div>
+          </div>
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${
+              mode === "student"
+                ? "bg-[#0071e3]/20 text-[#0071e3]"
+                : "bg-[#ff9f0a]/20 text-[#ff9f0a]"
+            }`}
+          >
+            {mode}
+          </span>
         </div>
 
         {/* Navigation Menu Links */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-[#86868b] uppercase tracking-wider px-2 mb-1">
-            {mode === "student" ? "Study Tools" : "Authoring Studio"}
+        <div className="flex flex-col gap-1.5 mt-1">
+          <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider px-2 mb-1">
+            {mode === "student" ? "Student Learning Tools" : "Instructor Authoring Studio"}
           </span>
 
           {mode === "student" ? (
             <>
               <button
                 onClick={() => setStudentTab("chat")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   studentTab === "chat"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -127,21 +117,10 @@ export function WorkspaceSidebar({
                 Grounded AI Tutor
               </button>
               <button
-                onClick={() => setStudentTab("quizzes")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
-                  studentTab === "quizzes"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
-                    : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                }`}
-              >
-                <FileQuestion className="h-4 w-4 text-[#30d158]" />
-                Practice Quizzes
-              </button>
-              <button
                 onClick={() => setStudentTab("flashcards")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   studentTab === "flashcards"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -150,9 +129,9 @@ export function WorkspaceSidebar({
               </button>
               <button
                 onClick={() => setStudentTab("teachback")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   studentTab === "teachback"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -161,9 +140,9 @@ export function WorkspaceSidebar({
               </button>
               <button
                 onClick={() => setStudentTab("pyq")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   studentTab === "pyq"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -175,20 +154,20 @@ export function WorkspaceSidebar({
             <>
               <button
                 onClick={() => setTeacherTab("curriculum")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   teacherTab === "curriculum"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
                 <Upload className="h-4 w-4 text-[#0071e3]" />
-                Document Ingestion
+                Document &amp; .rssh Ingestion
               </button>
               <button
                 onClick={() => setTeacherTab("exam_builder")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   teacherTab === "exam_builder"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -197,9 +176,9 @@ export function WorkspaceSidebar({
               </button>
               <button
                 onClick={() => setTeacherTab("slides")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   teacherTab === "slides"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -208,9 +187,9 @@ export function WorkspaceSidebar({
               </button>
               <button
                 onClick={() => setTeacherTab("export")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all cursor-pointer ${
                   teacherTab === "export"
-                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm"
+                    ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
                     : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
@@ -246,3 +225,4 @@ export function WorkspaceSidebar({
     </aside>
   );
 }
+
