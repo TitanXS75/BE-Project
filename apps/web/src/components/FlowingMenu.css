@@ -35,7 +35,8 @@
   height: 100%;
   width: 100%;
   position: relative;
-  cursor: pointer;
+  cursor: default;
+  user-select: none;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;

@@ -152,7 +152,7 @@ function MenuItem({
     };
   }, [displayHoverText, role, repetitions, speed]);
 
-  const handleMouseEnter = (ev: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleMouseEnter = (ev: React.MouseEvent<HTMLElement>) => {
     if (!itemRef.current || !marqueeRef.current || !marqueeInnerRef.current) return;
     const rect = itemRef.current.getBoundingClientRect();
     const x = ev.clientX - rect.left;
@@ -166,7 +166,7 @@ function MenuItem({
       .to([marqueeRef.current, marqueeInnerRef.current], { y: "0%" }, 0);
   };
 
-  const handleMouseLeave = (ev: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleMouseLeave = (ev: React.MouseEvent<HTMLElement>) => {
     if (!itemRef.current || !marqueeRef.current || !marqueeInnerRef.current) return;
     const rect = itemRef.current.getBoundingClientRect();
     const x = ev.clientX - rect.left;
@@ -181,15 +181,28 @@ function MenuItem({
 
   return (
     <div className="menu__item" ref={itemRef} style={{ borderColor }}>
-      <a
-        className="menu__item-link"
-        href={link}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        style={{ color: textColor }}
-      >
-        <span className="font-semibold tracking-tight">{text}</span>
-      </a>
+      {link && link !== "#" ? (
+        <a
+          className="menu__item-link"
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ color: textColor }}
+        >
+          <span className="font-semibold tracking-tight">{text}</span>
+        </a>
+      ) : (
+        <div
+          className="menu__item-link cursor-default select-none"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ color: textColor }}
+        >
+          <span className="font-semibold tracking-tight">{text}</span>
+        </div>
+      )}
       <div
         className="marquee"
         ref={marqueeRef}
