@@ -186,16 +186,16 @@ export function WelcomeScreen({ onStart, onHowItWorks, onDownloadExe }: WelcomeS
               </div>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.1] max-w-2xl">
-              Curriculum-Grounded AI <br />
+            <h1 className="text-3xl sm:text-5xl md:text-5xl lg:text-[50px] font-bold tracking-tight text-white leading-[1.12] max-w-2xl">
+              Curriculum Grounded AI <br />
               <span className="text-[#86868b]">
                 Engineered for Your Laptop.
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base md:text-lg text-[#86868b] max-w-xl mt-4 mb-7 leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-[#86868b] max-w-xl mt-4 mb-7 leading-relaxed font-normal">
               Master university courses with local models strictly bounded by your syllabus and textbooks.
-              Zero cloud data leaks, instant LanceDB vector retrieval, and portable <code className="text-[#f5f5f7] bg-[#1c1c1e] px-2 py-0.5 rounded border border-white/10 font-mono text-xs sm:text-sm">.rssh</code> packages.
+              Zero cloud data leaks, instant LanceDB vector retrieval, and portable <code className="text-[#f5f5f7] bg-[#1c1c1e] px-2 py-0.5 rounded border border-white/10 font-mono text-xs sm:text-sm font-medium">.rssh</code> packages.
             </p>
 
             {/* Action Buttons: Exact styling from Reference Image */}
