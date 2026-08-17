@@ -609,6 +609,7 @@ export default function Home() {
         <ArchitectureScreen
           onBack={() => setCurrentScreen("welcome")}
           onStart={handleStartSystemCheck}
+          onDownloadExe={() => setCurrentScreen("download")}
         />
       )}
 
@@ -617,6 +618,7 @@ export default function Home() {
         <DownloadScreen
           onBack={() => setCurrentScreen("welcome")}
           onStart={handleStartSystemCheck}
+          onHowItWorks={() => setCurrentScreen("architecture")}
         />
       )}
 
