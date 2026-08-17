@@ -87,13 +87,13 @@ export function StudentWelcomeHub({
   }, [isMounting, onEnterWorkspace]);
 
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col justify-center py-6 px-4 animate-in fade-in duration-300">
+    <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto h-full flex flex-col justify-center py-6 px-4 sm:px-6 animate-in fade-in duration-300">
       {/* ─── WELCOME HEADER ─── */}
       <div className="flex flex-col items-center text-center gap-3 mb-8">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
           Welcome, Student
         </h1>
-        <p className="text-sm text-[#86868b] max-w-lg leading-relaxed">
+        <p className="text-sm sm:text-base text-[#86868b] max-w-2xl leading-relaxed">
           Select a prescribed course to load its portable <span className="text-white font-mono font-medium">.rssh</span> package, vector embeddings, and verified syllabus materials.
         </p>
       </div>
@@ -109,47 +109,47 @@ export function StudentWelcomeHub({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {subjectsList.map((subj) => {
             const isCurrent = selected === subj.name;
             return (
               <div
                 key={subj.code}
                 onClick={() => handleStartMounting(subj.name)}
-                className={`p-6 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between gap-5 relative overflow-hidden ${
+                className={`p-6 sm:p-7 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between gap-5 relative overflow-hidden ${
                   isCurrent
                     ? "bg-[#1c1c1e] border-[#0071e3] shadow-lg ring-1 ring-[#0071e3]/40"
                     : "bg-[#161618] border-white/10 hover:border-white/20 hover:bg-[#1a1a1c]"
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-[#0071e3] group-hover:scale-105 transition-transform">
-                      <BookOpen className="h-5 w-5" />
+                  <div className="flex items-center gap-3.5">
+                    <div className="h-12 w-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-[#0071e3] group-hover:scale-105 transition-transform">
+                      <BookOpen className="h-6 w-6" />
                     </div>
                     <div>
                       <span className="text-[11px] font-mono text-[#0071e3] font-semibold block">
                         {subj.code}
                       </span>
-                      <h3 className="text-base font-bold text-white group-hover:text-[#0071e3] transition-colors">
+                      <h3 className="text-lg font-bold text-white group-hover:text-[#0071e3] transition-colors">
                         {subj.name}
                       </h3>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-black text-[#86868b] border border-white/5">
+                  <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-black text-[#86868b] border border-white/5">
                     {subj.rssh}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#86868b] pt-3 border-t border-white/[0.06]">
+                <div className="flex items-center justify-between text-xs sm:text-sm text-[#86868b] pt-4 border-t border-white/[0.06]">
                   <div className="flex items-center gap-3">
                     <span>{subj.units} Syllabus Units</span>
                     <span>•</span>
-                    <span className="text-[#30d158] font-mono">{subj.chunks} Dense Chunks</span>
+                    <span className="text-[#30d158] font-mono font-medium">{subj.chunks} Dense Chunks</span>
                   </div>
-                  <div className="flex items-center gap-1 text-white font-medium group-hover:text-[#0071e3] group-hover:translate-x-0.5 transition-all">
+                  <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] group-hover:translate-x-0.5 transition-all">
                     <span>Load Subject</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowRight className="h-4 w-4" />
                   </div>
                 </div>
               </div>

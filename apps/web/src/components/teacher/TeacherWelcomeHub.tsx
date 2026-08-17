@@ -67,13 +67,13 @@ export function TeacherWelcomeHub({
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col justify-center py-6 px-4 animate-in fade-in duration-300">
+    <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto h-full flex flex-col justify-center py-6 px-4 sm:px-6 animate-in fade-in duration-300">
       {/* ─── WELCOME HEADER ─── */}
       <div className="flex flex-col items-center text-center gap-3 mb-8">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
           Welcome, Faculty &amp; Instructor
         </h1>
-        <p className="text-sm text-[#86868b] max-w-lg leading-relaxed">
+        <p className="text-sm sm:text-base text-[#86868b] max-w-2xl leading-relaxed">
           Create new curriculum packages or update existing syllabus documents, Bloom&apos;s exam blueprints, and slide decks.
         </p>
       </div>

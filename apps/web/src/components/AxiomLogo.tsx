@@ -3,30 +3,80 @@ import React from "react";
 export function AxiomLogo({ className = "h-8 w-8" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 36 36"
+      viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <rect width="36" height="36" rx="9" fill="#1c1c1e" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-      <path
-        d="M18 7L28 13.5V22.5L18 29L8 22.5V13.5L18 7Z"
-        stroke="rgba(255,255,255,0.3)"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
+      <defs>
+        <linearGradient id="axiom-orb-1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="50%" stopColor="#60a5fa" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#a855f7" stopOpacity="0.6" />
+        </linearGradient>
+        <linearGradient id="axiom-orb-2" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
+          <stop offset="50%" stopColor="#818cf8" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.5" />
+        </linearGradient>
+        <linearGradient id="axiom-orb-3" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#c084fc" stopOpacity="0.9" />
+          <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
+        </linearGradient>
+        <radialGradient id="axiom-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="60%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </radialGradient>
+        <filter id="axiom-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Central Core Glow */}
+      <circle cx="24" cy="24" r="3.2" fill="url(#axiom-core)" filter="url(#axiom-glow)" />
+
+      {/* Orbit 1 - Horizontal */}
+      <ellipse
+        cx="24"
+        cy="24"
+        rx="20"
+        ry="7.5"
+        stroke="url(#axiom-orb-1)"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
-      <path
-        d="M18 7V29"
-        stroke="rgba(255,255,255,0.2)"
-        strokeWidth="1.2"
+
+      {/* Orbit 2 - Rotated 60deg */}
+      <ellipse
+        cx="24"
+        cy="24"
+        rx="20"
+        ry="7.5"
+        transform="rotate(60 24 24)"
+        stroke="url(#axiom-orb-2)"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
-      <path
-        d="M8 13.5L28 22.5M28 13.5L8 22.5"
-        stroke="rgba(255,255,255,0.15)"
-        strokeWidth="1"
+
+      {/* Orbit 3 - Rotated 120deg */}
+      <ellipse
+        cx="24"
+        cy="24"
+        rx="20"
+        ry="7.5"
+        transform="rotate(120 24 24)"
+        stroke="url(#axiom-orb-3)"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
-      <circle cx="18" cy="18" r="3.5" fill="#0071e3" />
-      <circle cx="18" cy="18" r="1.5" fill="#ffffff" />
+
+      {/* Floating Orbital Electron / Quantum Particle */}
+      <circle cx="24" cy="4" r="1.6" fill="#ffffff" filter="url(#axiom-glow)" />
+      <circle cx="6.8" cy="34" r="1.4" fill="#60a5fa" filter="url(#axiom-glow)" />
+      <circle cx="41.2" cy="34" r="1.4" fill="#c084fc" filter="url(#axiom-glow)" />
     </svg>
   );
 }
