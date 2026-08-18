@@ -6,7 +6,6 @@ import {
   Layers,
   BookOpen,
   Sparkles,
-  ArrowRight,
   Database,
   Cpu,
   CheckCircle2,
@@ -147,9 +146,8 @@ export function StudentWelcomeHub({
                     <span>•</span>
                     <span className="text-[#30d158] font-mono font-medium">{subj.chunks} Dense Chunks</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] group-hover:translate-x-0.5 transition-all">
+                  <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] transition-all">
                     <span>Load Subject</span>
-                    <ArrowRight className="h-4 w-4" />
                   </div>
                 </div>
               </div>

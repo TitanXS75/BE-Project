@@ -2,7 +2,20 @@
 
 import React, { useState } from "react";
 import Stepper, { Step } from "@/components/Stepper";
-import { Laptop, Terminal, Cpu, Activity, HardDrive, CheckCircle2, Key, ExternalLink, GraduationCap, BookOpen, User, Rocket } from "lucide-react";
+import {
+  Laptop,
+  Terminal,
+  Cpu,
+  Activity,
+  HardDrive,
+  CheckCircle2,
+  Key,
+  ExternalLink,
+  User,
+  Rocket,
+  Building,
+  Hash
+} from "lucide-react";
 import { SystemDiagnostics, ModelRecommendation } from "@/lib/api";
 
 interface OnboardingStepperProps {
@@ -16,8 +29,8 @@ interface OnboardingStepperProps {
   setSelectedModel: (model: string) => void;
   isRecommending: boolean;
   onAnalyzeGemini: () => void;
-  mode: "student" | "teacher";
-  setMode: (mode: "student" | "teacher") => void;
+  mode: "student" | "teacher" | "admin";
+  setMode: (mode: "student" | "teacher" | "admin") => void;
   onComplete: () => void;
   onBackToHome: () => void;
 }
@@ -39,6 +52,11 @@ export function OnboardingStepper({
   onBackToHome
 }: OnboardingStepperProps) {
   const [userName, setUserName] = useState("Alex Rivers");
+  const [gender, setGender] = useState<string>("Male");
+  const [department, setDepartment] = useState<string>("Computer Science & Engineering");
+  const [rollNumber, setRollNumber] = useState<string>("AX-2026-042");
+
+  const GENDER_OPTIONS = ["Male", "Female"];
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-between p-4 sm:p-6 bg-black relative select-none antialiased">
@@ -51,7 +69,7 @@ export function OnboardingStepper({
           Configure Your Axiom Environment
         </h1>
         <p className="text-xs sm:text-sm text-[#86868b] mt-1">
-          Follow the steps below to calibrate local hardware, models, and your learning workspace.
+          Calibrate local hardware, inference models, and your profile details.
         </p>
       </header>
 
@@ -64,7 +82,7 @@ export function OnboardingStepper({
           }}
           onFinalStepCompleted={onComplete}
           onFirstStepBack={onBackToHome}
-          firstStepBackButtonText="Exit to Home"
+          firstStepBackButtonText="Change Role"
           backButtonText="Previous"
           nextButtonText="Continue"
           stepCircleContainerClassName="!max-w-5xl !bg-[#161618]/95 !backdrop-blur-2xl !border-white/10 !rounded-3xl shadow-2xl"
@@ -124,7 +142,7 @@ export function OnboardingStepper({
                     <div>
                       <p className="text-sm sm:text-base font-bold text-white">Hardware Memory</p>
                       <p className="text-xs sm:text-sm text-[#86868b]">
-                        {diagnostics?.hardware ? `${diagnostics.hardware.ram_total_gb} GB RAM • ${diagnostics.hardware.cpu_cores} Cores` : "Benchmarking..."}
+                        {diagnostics ? `${diagnostics.hardware.ram_total_gb} GB RAM (${diagnostics.hardware.cpu_cores} Cores)` : "Probing memory..."}
                       </p>
                     </div>
                   </div>
@@ -137,65 +155,63 @@ export function OnboardingStepper({
                       <HardDrive className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm sm:text-base font-bold text-white">LanceDB Storage</p>
+                      <p className="text-sm sm:text-base font-bold text-white">Vector DB (LanceDB)</p>
                       <p className="text-xs sm:text-sm text-[#86868b]">
-                        {diagnostics?.storage.subjects_count ? `${diagnostics.storage.subjects_count} Subjects Indexed` : "Storage Ready"}
+                        {diagnostics?.storage.subjects_count ? `${diagnostics.storage.subjects_count} Course Stores Ready` : "Ready"}
                       </p>
                     </div>
                   </div>
                   {scanStep >= 4 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                 </div>
               </div>
-
-              <div className="p-3.5 rounded-2xl bg-[#1c1c1e]/70 border border-white/[0.08] text-xs sm:text-sm text-[#86868b] flex items-center gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-[#30d158] flex-shrink-0" />
-                <span><strong className="text-white">Hardware Validated:</strong> Your local device satisfies all offline vector retrieval and LLM neural execution criteria.</span>
-              </div>
             </div>
           </Step>
 
-          {/* STEP 2: MODEL RECOMMENDATION & OPTIONAL GEMINI KEY */}
+          {/* STEP 2: MODEL RECOMMENDATION & CLOUD AI */}
           <Step>
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Step 2: AI Model Selection</h2>
-                  <p className="text-xs sm:text-sm text-[#86868b]">Calibrated for your machine profile</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Step 2: Inference &amp; Models</h2>
+                  <p className="text-xs sm:text-sm text-[#86868b]">Configure local 4-bit SLMs and optional Cloud Gemini acceleration</p>
                 </div>
-                <span className="text-xs sm:text-sm px-3.5 py-1 rounded-full bg-[#0071e3]/15 text-[#0071e3] border border-[#0071e3]/30 font-semibold">
-                  {diagnostics?.hardware.ram_total_gb || 16} GB RAM Detected
-                </span>
+                {recommendation && (
+                  <span className="text-xs font-mono px-3 py-1 rounded-full bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/30">
+                    {recommendation.speed_rating}
+                  </span>
+                )}
               </div>
 
-              {/* Gemini API Key */}
-              <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2.5">
+              {/* Gemini Key Input */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <label className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5">
-                    <Key className="h-4 w-4 text-[#ff9f0a]" />
-                    Google Gemini API Key (Optional Cloud Consultation)
+                    <Key className="h-4 w-4 text-[#0071e3]" />
+                    Optional Google Gemini API Key
                   </label>
                   <a
-                    href="https://aistudio.google.com/app/apikey"
+                    href="https://aistudio.google.com/apikey"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs sm:text-sm text-[#0071e3] hover:underline flex items-center gap-1 font-medium"
+                    className="text-xs text-[#0071e3] hover:underline flex items-center gap-1"
                   >
-                    Get Key <ExternalLink className="h-3.5 w-3.5" />
+                    <span>Get Key</span>
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
-                <div className="flex gap-2.5">
+                <div className="flex gap-2">
                   <input
                     type="password"
                     value={geminiApiKey}
                     onChange={(e) => setGeminiApiKey(e.target.value)}
                     placeholder="AIzaSy..."
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#161618] border border-white/10 text-xs sm:text-sm text-white placeholder-[#86868b] outline-none focus:border-[#0071e3] font-mono"
+                    className="flex-1 px-4 py-2 rounded-xl bg-[#161618] border border-white/10 text-xs sm:text-sm text-white placeholder-[#86868b] outline-none focus:border-[#0071e3]"
                   />
                   <button
                     type="button"
                     onClick={onAnalyzeGemini}
                     disabled={isRecommending || !geminiApiKey.trim()}
-                    className="px-5 py-2.5 rounded-xl btn-apple-primary disabled:opacity-40 text-xs sm:text-sm font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-50 text-xs font-semibold text-white transition-all cursor-pointer"
                   >
                     {isRecommending ? "Testing..." : "Apply Key"}
                   </button>
@@ -239,103 +255,123 @@ export function OnboardingStepper({
             </div>
           </Step>
 
-          {/* STEP 3: USER PROFILE & WORKSPACE ROLE */}
+          {/* STEP 3: DEMOGRAPHIC & ACADEMIC DETAILS */}
           <Step>
             <div className="flex flex-col gap-4">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Step 3: Profile &amp; Role</h2>
-                <p className="text-xs sm:text-sm text-[#86868b]">Customize your identity and primary workspace role</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Step 3: Profile &amp; Department</h2>
+                <p className="text-xs sm:text-sm text-[#86868b]">Personalize your learning profile and institutional context</p>
               </div>
 
-              {/* Name Input */}
-              <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2">
-                <label className="text-xs sm:text-sm font-semibold text-white flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-[#0071e3]" />
-                  Your Display Name
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Full Name */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2 shadow-sm">
+                  <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <User className="h-4 w-4 text-[#0071e3]" />
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="e.g. Alex Rivers"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#161618] border border-white/10 text-xs sm:text-sm text-white placeholder-[#86868b] outline-none focus:border-[#0071e3]"
+                  />
+                </div>
+
+                {/* Roll / Registration Number */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2 shadow-sm">
+                  <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <Hash className="h-4 w-4 text-[#0071e3]" />
+                    Student / Faculty ID
+                  </label>
+                  <input
+                    type="text"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    placeholder="e.g. AX-2026-042"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#161618] border border-white/10 text-xs sm:text-sm text-white placeholder-[#86868b] outline-none focus:border-[#0071e3]"
+                  />
+                </div>
+              </div>
+
+              {/* Gender Selector (Male / Female only) */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2.5 shadow-sm">
+                <label className="text-xs font-semibold text-white">Gender</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {GENDER_OPTIONS.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer text-center ${
+                        gender === g
+                          ? "bg-[#1c1c1e] border-[#0071e3] text-white ring-1 ring-[#0071e3]"
+                          : "bg-[#161618] border-white/10 text-[#86868b] hover:text-white"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Department / Stream */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col gap-2 shadow-sm">
+                <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <Building className="h-4 w-4 text-[#0071e3]" />
+                  Academic Stream / Department
                 </label>
                 <input
                   type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Your Name (e.g., Alex Rivers)"
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#161618] border border-white/10 text-sm sm:text-base text-white placeholder-[#86868b] outline-none focus:border-[#0071e3]"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g. Computer Science & Engineering"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#161618] border border-white/10 text-xs sm:text-sm text-white placeholder-[#86868b] outline-none focus:border-[#0071e3]"
                 />
-              </div>
-
-              {/* Role Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div
-                  onClick={() => setMode("student")}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    mode === "student"
-                      ? "bg-[#1c1c1e] border-[#0071e3] ring-1 ring-[#0071e3]"
-                      : "bg-black/40 border-white/10 hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-2.5">
-                    <div className="h-10 w-10 rounded-xl bg-[#161618] flex items-center justify-center text-[#0071e3] border border-white/5">
-                      <GraduationCap className="h-6 w-6" />
-                    </div>
-                    <span className="text-base sm:text-lg font-bold text-white">Student Workspace</span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-[#86868b] leading-relaxed">
-                    AI tutor grounded in course textbooks, interactive flashcards, adaptive practice quizzes &amp; Feynman teach-back drills.
-                  </p>
-                </div>
-
-                <div
-                  onClick={() => setMode("teacher")}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    mode === "teacher"
-                      ? "bg-[#1c1c1e] border-[#ff9f0a] ring-1 ring-[#ff9f0a]"
-                      : "bg-black/40 border-white/10 hover:border-white/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-2.5">
-                    <div className="h-10 w-10 rounded-xl bg-[#161618] flex items-center justify-center text-[#ff9f0a] border border-white/5">
-                      <BookOpen className="h-6 w-6" />
-                    </div>
-                    <span className="text-base sm:text-lg font-bold text-white">Teacher Studio</span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-[#86868b] leading-relaxed">
-                    Curriculum ingestion, Bloom&apos;s Taxonomy exam blueprint generator, and syllabus presentation slide creator.
-                  </p>
-                </div>
               </div>
             </div>
           </Step>
 
           {/* STEP 4: FINAL LAUNCH CONFIRMATION */}
           <Step>
-            <div className="flex flex-col items-center text-center justify-center py-3">
-              <div className="h-14 w-14 rounded-2xl bg-[#30d158]/10 text-[#30d158] flex items-center justify-center mb-3 border border-[#30d158]/20">
-                <Rocket className="h-7 w-7" />
+            <div className="flex flex-col items-center text-center justify-center py-2">
+              <div className="h-12 w-12 rounded-2xl bg-[#30d158]/10 text-[#30d158] flex items-center justify-center mb-2 border border-[#30d158]/20">
+                <Rocket className="h-6 w-6" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">You&apos;re All Set!</h2>
-              <p className="text-xs sm:text-sm text-[#86868b] max-w-md mt-1 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">You&apos;re All Set!</h2>
+              <p className="text-xs sm:text-sm text-[#86868b] max-w-md mt-0.5 mb-3">
                 Your offline AI workspace has been configured and is ready to load.
               </p>
 
-              <div className="w-full max-w-lg p-5 rounded-2xl bg-black/60 border border-white/[0.08] text-left text-xs sm:text-sm flex flex-col gap-2.5 mb-4 shadow-sm">
-                <div className="flex justify-between py-1.5 border-b border-white/[0.06]">
+              <div className="w-full max-w-lg p-4 rounded-2xl bg-black/60 border border-white/[0.08] text-left text-xs flex flex-col gap-2 mb-3 shadow-sm">
+                <div className="flex justify-between py-1 border-b border-white/[0.06]">
                   <span className="text-[#86868b]">User Profile</span>
-                  <span className="font-bold text-white">{userName}</span>
+                  <span className="font-bold text-white">{userName} ({gender})</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-white/[0.06]">
+                <div className="flex justify-between py-1 border-b border-white/[0.06]">
+                  <span className="text-[#86868b]">Department / Stream</span>
+                  <span className="font-bold text-white">{department}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/[0.06]">
+                  <span className="text-[#86868b]">ID / Roll Number</span>
+                  <span className="font-mono text-[#f5f5f7]">{rollNumber}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/[0.06]">
                   <span className="text-[#86868b]">Active Model</span>
                   <span className="font-bold text-[#0071e3] font-mono">{selectedModel}</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-white/[0.06]">
+                <div className="flex justify-between py-1 border-b border-white/[0.06]">
                   <span className="text-[#86868b]">Selected Workspace</span>
                   <span className="font-bold text-[#30d158] capitalize">{mode} Mode</span>
                 </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-[#86868b]">Default Subject</span>
+                <div className="flex justify-between py-1">
+                  <span className="text-[#86868b]">Default Course Package</span>
                   <span className="font-bold text-white">Machine Learning (CS-401)</span>
                 </div>
               </div>
 
-              <p className="text-xs sm:text-sm text-[#86868b]">
+              <p className="text-xs text-[#86868b]">
                 Click <strong className="text-white">Complete</strong> below to open the workspace.
               </p>
             </div>

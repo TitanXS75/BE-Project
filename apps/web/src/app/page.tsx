@@ -14,6 +14,7 @@ import { StudentWorkspace, StudentTab } from "@/components/student/StudentWorksp
 import { TeacherWorkspace, TeacherTab } from "@/components/teacher/TeacherWorkspace";
 import { StudentWelcomeHub } from "@/components/student/StudentWelcomeHub";
 import { TeacherWelcomeHub } from "@/components/teacher/TeacherWelcomeHub";
+import { AdminWorkspace, AdminWelcomeHub, AdminTab, ErpPortalTransition } from "@/erp";
 import { SubjectModal } from "@/components/modals/SubjectModal";
 import { SpecsModal } from "@/components/modals/SpecsModal";
 import { LogoutModal } from "@/components/modals/LogoutModal";
@@ -33,18 +34,22 @@ import {
 } from "@/lib/api";
 
 type AppScreen = "welcome" | "architecture" | "download" | "onboarding" | "system_check" | "model_recommendation" | "role_selection" | "workspace";
-type Mode = "student" | "teacher";
+type Mode = "student" | "teacher" | "admin";
 
 export default function Home() {
   // Navigation Screens
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("welcome");
   const [mode, setMode] = useState<Mode>("student");
+  const [primaryRole, setPrimaryRole] = useState<"student" | "teacher">("student");
+  const [portalTransition, setPortalTransition] = useState<"to_erp" | "to_workspace" | null>(null);
   const [studentTab, setStudentTab] = useState<StudentTab>("chat");
   const [teacherTab, setTeacherTab] = useState<TeacherTab>("curriculum");
+  const [adminTab, setAdminTab] = useState<AdminTab>("dashboard");
 
   // Welcome Hub View States (Always show welcome hub upon entering)
   const [studentInHub, setStudentInHub] = useState(true);
   const [teacherInHub, setTeacherInHub] = useState(true);
+  const [adminInHub, setAdminInHub] = useState(true);
 
   // System Diagnostics State
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null);
@@ -391,18 +396,28 @@ export default function Home() {
     }
   };
 
-  // Handle "Get Started" & System Check Flow
-  const handleStartSystemCheck = async () => {
-    setCurrentScreen("onboarding");
+  // Handle "Get Started" -> Opens Role Selection first
+  const handleOpenRoleSelection = () => {
+    setCurrentScreen("role_selection");
+  };
+
+  // Handle Role Chosen -> Sets role and launches Stepper calibration
+  const handleRoleChosen = (selectedRole: Mode) => {
+    setMode(selectedRole);
+    if (selectedRole === "teacher") {
+      setPrimaryRole("teacher");
+    } else if (selectedRole === "student") {
+      setPrimaryRole("student");
+    }
+
+    // Launch diagnostics scan for stepper
     setIsScanning(true);
     setScanStep(1);
+    setCurrentScreen("onboarding");
 
-    try {
-      const diag = await fetchSystemDiagnostics();
-      setDiagnostics(diag);
-    } catch {
-      // Keep existing diagnostics
-    }
+    fetchSystemDiagnostics()
+      .then((diag) => setDiagnostics(diag))
+      .catch(() => {});
 
     setTimeout(() => {
       setScanStep(2);
@@ -429,7 +444,7 @@ export default function Home() {
                 alternatives: [
                   { model: "llama3.2:3b", name: "Llama 3.2 (3B Ultra-Fast)", ram_req: "2.2 GB", best_for: "Maximum battery life & high speed" },
                   { model: "deepseek-r1:8b", name: "DeepSeek R1 (8B Reasoning)", ram_req: "5.5 GB", best_for: "Deep Chain-of-Thought math & proofs" },
-                  { model: "phi3:mini", name: "Microsoft Phi-3 Mini (3.8B)", ram_req: "2.8 GB", best_for: "Academic textbook QA" }
+                  { model: "phi3:mini", name: "Microsoft Phi-3 Mini", ram_req: "2.8 GB", best_for: "Academic textbook QA" }
                 ]
               });
             });
@@ -598,7 +613,7 @@ export default function Home() {
       {/* ─── SCREEN 1: WELCOME ─── */}
       {currentScreen === "welcome" && (
         <WelcomeScreen
-          onStart={handleStartSystemCheck}
+          onStart={handleOpenRoleSelection}
           onHowItWorks={() => setCurrentScreen("architecture")}
           onDownloadExe={() => setCurrentScreen("download")}
         />
@@ -608,7 +623,7 @@ export default function Home() {
       {currentScreen === "architecture" && (
         <ArchitectureScreen
           onBack={() => setCurrentScreen("welcome")}
-          onStart={handleStartSystemCheck}
+          onStart={handleOpenRoleSelection}
           onDownloadExe={() => setCurrentScreen("download")}
         />
       )}
@@ -617,12 +632,21 @@ export default function Home() {
       {currentScreen === "download" && (
         <DownloadScreen
           onBack={() => setCurrentScreen("welcome")}
-          onStart={handleStartSystemCheck}
+          onStart={handleOpenRoleSelection}
           onHowItWorks={() => setCurrentScreen("architecture")}
         />
       )}
 
-      {/* ─── SCREEN 1.5: GUIDED ONBOARDING STEPPER (REACT BITS) ─── */}
+      {/* ─── SCREEN 2: ROLE SELECTION (3 VERTICAL CARDS WITH 3D LOGOS) ─── */}
+      {currentScreen === "role_selection" && (
+        <RoleSelectionScreen
+          onSelectRole={(selectedRole) => handleRoleChosen(selectedRole)}
+          onBack={() => setCurrentScreen("welcome")}
+          onExitHome={() => setCurrentScreen("welcome")}
+        />
+      )}
+
+      {/* ─── SCREEN 3: GUIDED ONBOARDING STEPPER (CALIBRATION & ENVIRONMENT) ─── */}
       {currentScreen === "onboarding" && (
         <OnboardingStepper
           diagnostics={diagnostics}
@@ -638,25 +662,31 @@ export default function Home() {
           mode={mode}
           setMode={setMode}
           onComplete={() => {
+            if (mode === "teacher") {
+              setPrimaryRole("teacher");
+            } else if (mode === "student") {
+              setPrimaryRole("student");
+            }
             setStudentInHub(true);
             setTeacherInHub(true);
+            setAdminInHub(true);
             setCurrentScreen("workspace");
           }}
-          onBackToHome={() => setCurrentScreen("welcome")}
+          onBackToHome={() => setCurrentScreen("role_selection")}
         />
       )}
 
-      {/* ─── SCREEN 2: SYSTEM DIAGNOSTICS & HARDWARE SCAN ─── */}
+      {/* ─── SCREEN 3.1: SYSTEM DIAGNOSTICS & HARDWARE SCAN (STANDALONE) ─── */}
       {currentScreen === "system_check" && (
         <SystemCheckScreen
           diagnostics={diagnostics}
           scanStep={scanStep}
-          onBack={() => setCurrentScreen("welcome")}
+          onBack={() => setCurrentScreen("role_selection")}
           onContinue={() => setCurrentScreen("model_recommendation")}
         />
       )}
 
-      {/* ─── SCREEN 3: MODEL RECOMMENDATION & GEMINI SETUP ─── */}
+      {/* ─── SCREEN 3.2: MODEL RECOMMENDATION & GEMINI SETUP (STANDALONE) ─── */}
       {currentScreen === "model_recommendation" && (
         <ModelRecommendationScreen
           diagnostics={diagnostics}
@@ -669,21 +699,7 @@ export default function Home() {
           isRecommending={isRecommending}
           onAnalyzeGemini={handleAnalyzeWithGemini}
           onBack={() => setCurrentScreen("system_check")}
-          onContinue={() => setCurrentScreen("role_selection")}
-        />
-      )}
-
-      {/* ─── SCREEN 4: ROLE SELECTION (STRICT ROLE INITIALIZATION) ─── */}
-      {currentScreen === "role_selection" && (
-        <RoleSelectionScreen
-          onSelectRole={(selectedRole) => {
-            setMode(selectedRole);
-            setStudentInHub(true);
-            setTeacherInHub(true);
-            setCurrentScreen("workspace");
-          }}
-          onBack={() => setCurrentScreen("model_recommendation")}
-          onExitHome={() => setCurrentScreen("welcome")}
+          onContinue={() => setCurrentScreen("workspace")}
         />
       )}
 
@@ -702,6 +718,11 @@ export default function Home() {
             setTeacherTab={(tab) => {
               setTeacherTab(tab);
               setTeacherInHub(false);
+            }}
+            adminTab={adminTab}
+            setAdminTab={(tab) => {
+              setAdminTab(tab);
+              setAdminInHub(false);
             }}
             diagnostics={diagnostics}
             onOpenSpecsModal={() => setShowSpecsModal(true)}
@@ -722,18 +743,41 @@ export default function Home() {
               onOpenSubjectModal={() => {
                 if (mode === "student") {
                   setStudentInHub(true);
-                } else {
+                } else if (mode === "teacher") {
                   setTeacherInHub(true);
+                } else {
+                  setAdminInHub(true);
                 }
               }}
               cloudConfig={cloudConfig}
               onOpenAIModelModal={() => setShowAIModelModal(true)}
-              isInHub={mode === "student" ? studentInHub : teacherInHub}
+              isInHub={mode === "student" ? studentInHub : mode === "teacher" ? teacherInHub : adminInHub}
               onOpenRSSHViewer={() => setShowRSSHModal(true)}
+              onSwitchToErp={() => {
+                setPortalTransition("to_erp");
+              }}
+              onReturnFromErp={() => {
+                setPortalTransition("to_workspace");
+              }}
             />
 
-            <div className="flex-1 overflow-y-auto p-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {mode === "student" ? (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {mode === "admin" ? (
+                adminInHub ? (
+                  <AdminWelcomeHub
+                    onEnterTab={(tab) => {
+                      setAdminTab(tab);
+                      setAdminInHub(false);
+                    }}
+                    onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
+                  />
+                ) : (
+                  <AdminWorkspace
+                    adminTab={adminTab}
+                    setAdminTab={setAdminTab}
+                  />
+                )
+              ) : mode === "student" ? (
                 studentInHub ? (
                   <StudentWelcomeHub
                     subjectsList={subjectsList}
@@ -872,9 +916,32 @@ export default function Home() {
               setShowLogoutConfirm(false);
               setStudentInHub(true);
               setTeacherInHub(true);
+              setAdminInHub(true);
               setCurrentScreen("welcome");
             }}
           />
+
+          {/* Fast Aesthetic Portal Transition Overlay */}
+          {portalTransition === "to_erp" && (
+            <ErpPortalTransition
+              destination="erp"
+              onComplete={() => {
+                setMode("admin");
+                setAdminInHub(false);
+                setPortalTransition(null);
+              }}
+            />
+          )}
+
+          {portalTransition === "to_workspace" && (
+            <ErpPortalTransition
+              destination="workspace"
+              onComplete={() => {
+                setMode(primaryRole);
+                setPortalTransition(null);
+              }}
+            />
+          )}
         </div>
       )}
     </div>
