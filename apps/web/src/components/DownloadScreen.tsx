@@ -7,9 +7,10 @@ import { AxiomLogo } from "./AxiomLogo";
 interface DownloadScreenProps {
   onBack: () => void;
   onStart: () => void;
+  onHowItWorks?: () => void;
 }
 
-export function DownloadScreen({ onBack, onStart }: DownloadScreenProps) {
+export function DownloadScreen({ onBack, onStart, onHowItWorks }: DownloadScreenProps) {
   const [downloading, setDownloading] = useState(false);
   const [downloadComplete, setDownloadComplete] = useState(false);
 

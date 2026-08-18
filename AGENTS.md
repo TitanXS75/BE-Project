@@ -35,8 +35,8 @@ This repository contains **Axiom**, a local-first, air-gapped curriculum-aware l
 ---
 
 ## 4. Skill Routing Guide
-Only consult specialized skill documents when performing work in that specific domain to prevent token bloat:
 - **Frontend / Styling / Design**: Consult `.agents/skills/frontend-ui-standards/SKILL.md`
+- **3D Glassmorphic Icon Generation**: Consult [3D_ICON_DESIGN_GUIDELINES.md](file:///D:/BE-Project/3D_ICON_DESIGN_GUIDELINES.md)
 - **Vector Search / RAG / LanceDB**: Consult `.agents/skills/local-rag-lancedb/SKILL.md`
 - **FastAPI / Ollama / Python Backend**: Consult `.agents/skills/ollama-fastapi-backend/SKILL.md`
 - **.rssh Archive Format & Ingestion**: Consult `.agents/skills/rssh-package-format/SKILL.md`
