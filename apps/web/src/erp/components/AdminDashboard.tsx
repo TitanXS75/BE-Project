@@ -73,7 +73,7 @@ export function AdminDashboard({
               Axiom Enterprise ERP Hub
             </h1>
             <p className="text-xs sm:text-sm text-[#86868b] mt-1 max-w-2xl leading-relaxed">
-              Real-time institutional management synchronized via Cloud Supabase with air-gapped local AI inference nodes.
+              Real-time institutional management with secure data synchronization and air-gapped local AI inference nodes.
             </p>
           </div>
           <div className="flex items-center gap-3">

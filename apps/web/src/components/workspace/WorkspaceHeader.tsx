@@ -19,6 +19,7 @@ interface UnitItem {
 
 interface WorkspaceHeaderProps {
   mode: "student" | "teacher" | "admin";
+  portalView?: "workspace" | "erp";
   activeSubject: string;
   activeUnit: string;
   setActiveUnit: (unit: string) => void;
@@ -37,6 +38,7 @@ interface WorkspaceHeaderProps {
 
 export function WorkspaceHeader({
   mode,
+  portalView = "workspace",
   activeSubject,
   activeUnit,
   setActiveUnit,
@@ -72,8 +74,12 @@ export function WorkspaceHeader({
   const isCloudActive = cloudConfig.mode === "cloud" || (cloudConfig.mode === "hybrid" && cloudConfig.isValid);
 
   const getRoleTitle = () => {
-    if (mode === "student") return "Student Workspace";
-    if (mode === "teacher") return "Teacher Studio";
+    if (mode === "student") {
+      return portalView === "erp" ? "Student ERP Portal" : "Student Workspace";
+    }
+    if (mode === "teacher") {
+      return portalView === "erp" ? "Teacher ERP Portal" : "Teacher Studio";
+    }
     return "Institution Admin ERP";
   };
 
@@ -87,10 +93,10 @@ export function WorkspaceHeader({
 
         <span className="text-[#86868b]">/</span>
 
-        {mode === "admin" ? (
+        {portalView === "erp" || mode === "admin" ? (
           <span className="text-[#86868b] text-xs font-medium flex items-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Cloud Supabase Sync Live</span>
+            <span>Institutional Records Active</span>
           </span>
         ) : isInHub ? (
           <span className="text-[#86868b] text-xs font-medium">
@@ -190,12 +196,12 @@ export function WorkspaceHeader({
             <div className="px-3 py-2 text-[11px] font-semibold text-[#86868b] uppercase tracking-wider border-b border-white/[0.08] flex items-center justify-between">
               <span>Portals</span>
               <span className="text-[10px] text-emerald-400 font-mono">
-                {mode === "admin" ? "ERP Portal Active" : "Learning Workspace"}
+                {portalView === "erp" || mode === "admin" ? "ERP Portal Active" : "Learning Workspace"}
               </span>
             </div>
 
-            {/* Switch to ERP Option (When in Student / Teacher mode) */}
-            {mode !== "admin" && onSwitchToErp && (
+            {/* Switch to ERP Option (When in Learning Workspace) */}
+            {portalView !== "erp" && mode !== "admin" && onSwitchToErp && (
               <button
                 onClick={() => {
                   setIsActionsMenuOpen(false);
@@ -209,7 +215,7 @@ export function WorkspaceHeader({
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 font-bold text-white">
                     <span>Switch to ERP Portal</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-[#0071e3] font-semibold">Cloud</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-[#0071e3] font-semibold">ERP</span>
                   </div>
                   <span className="text-[11px] text-[#86868b] leading-tight mt-0.5">
                     Admissions, attendance, routine &amp; grades
@@ -218,8 +224,8 @@ export function WorkspaceHeader({
               </button>
             )}
 
-            {/* Return from ERP Option (When in Admin mode) */}
-            {mode === "admin" && onReturnFromErp && (
+            {/* Return from ERP Option (When in ERP Mode) */}
+            {(portalView === "erp" || mode === "admin") && onReturnFromErp && (
               <button
                 onClick={() => {
                   setIsActionsMenuOpen(false);
@@ -231,7 +237,9 @@ export function WorkspaceHeader({
                   <FolderOpen className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-white">Return to Learning Workspace</span>
+                  <span className="font-bold text-white">
+                    {mode === "teacher" ? "Return to Authoring Studio" : mode === "student" ? "Return to Learning Workspace" : "Return to Welcome Hub"}
+                  </span>
                   <span className="text-[11px] text-[#86868b] leading-tight mt-0.5">
                     Back to active curriculum &amp; AI tools
                   </span>

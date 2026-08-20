@@ -3,80 +3,84 @@ import React from "react";
 export function AxiomLogo({ className = "h-8 w-8" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
       <defs>
-        <linearGradient id="axiom-orb-1" x1="0%" y1="0%" x2="100%" y2="100%">
+        {/* Left Wing Gradient - Precision Blue to Cyan */}
+        <linearGradient id="axiom-left-facet" x1="16" y1="12" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#60a5fa" />
+          <stop offset="40%" stopColor="#0071e3" />
+          <stop offset="100%" stopColor="#034ea2" />
+        </linearGradient>
+
+        {/* Right Wing Gradient - Indigo to Violet */}
+        <linearGradient id="axiom-right-facet" x1="48" y1="12" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#a78bfa" />
+          <stop offset="50%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#4338ca" />
+        </linearGradient>
+
+        {/* Apex Crown Gradient - Ultra Bright Specular Highlight */}
+        <linearGradient id="axiom-apex-cap" x1="32" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="50%" stopColor="#60a5fa" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#a855f7" stopOpacity="0.6" />
+          <stop offset="60%" stopColor="#38bdf8" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#0071e3" stopOpacity="0.4" />
         </linearGradient>
-        <linearGradient id="axiom-orb-2" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
-          <stop offset="50%" stopColor="#818cf8" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.5" />
-        </linearGradient>
-        <linearGradient id="axiom-orb-3" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#c084fc" stopOpacity="0.9" />
-          <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.75" />
-          <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
-        </linearGradient>
-        <radialGradient id="axiom-core" cx="50%" cy="50%" r="50%">
+
+        {/* Central Core Crossbar Diamond */}
+        <linearGradient id="axiom-core-diamond" x1="24" y1="30" x2="40" y2="44" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="60%" stopColor="#60a5fa" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-        </radialGradient>
-        <filter id="axiom-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <stop offset="50%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#818cf8" />
+        </linearGradient>
+
+        {/* Outer Ambient Glow */}
+        <filter id="axiom-core-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
           <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
       </defs>
 
-      {/* Central Core Glow */}
-      <circle cx="24" cy="24" r="3.2" fill="url(#axiom-core)" filter="url(#axiom-glow)" />
+      {/* Background Soft Optical Glow */}
+      <circle cx="32" cy="32" r="22" fill="#0071e3" fillOpacity="0.12" filter="url(#axiom-core-glow)" />
 
-      {/* Orbit 1 - Horizontal */}
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="20"
-        ry="7.5"
-        stroke="url(#axiom-orb-1)"
-        strokeWidth="2"
-        strokeLinecap="round"
+      {/* ─── LEFT FACET PILLAR (Ascending A-Leg) ─── */}
+      <path
+        d="M32 10L14 46C13.2 47.6 14.4 49.5 16.2 49.5H23.5C24.4 49.5 25.2 48.9 25.6 48.1L32 34.5L34 30L32 10Z"
+        fill="url(#axiom-left-facet)"
       />
 
-      {/* Orbit 2 - Rotated 60deg */}
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="20"
-        ry="7.5"
-        transform="rotate(60 24 24)"
-        stroke="url(#axiom-orb-2)"
-        strokeWidth="2"
-        strokeLinecap="round"
+      {/* ─── RIGHT FACET PILLAR (Descending A-Leg) ─── */}
+      <path
+        d="M32 10L50 46C50.8 47.6 49.6 49.5 47.8 49.5H40.5C39.6 49.5 38.8 48.9 38.4 48.1L32 34.5L30 30L32 10Z"
+        fill="url(#axiom-right-facet)"
       />
 
-      {/* Orbit 3 - Rotated 120deg */}
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="20"
-        ry="7.5"
-        transform="rotate(120 24 24)"
-        stroke="url(#axiom-orb-3)"
-        strokeWidth="2"
-        strokeLinecap="round"
+      {/* ─── CENTRAL PRISM DIAMOND (A-Crossbar & Neural Lens) ─── */}
+      <path
+        d="M32 26L41 38.5L32 47L23 38.5L32 26Z"
+        fill="url(#axiom-core-diamond)"
+        filter="url(#axiom-core-glow)"
       />
 
-      {/* Floating Orbital Electron / Quantum Particle */}
-      <circle cx="24" cy="4" r="1.6" fill="#ffffff" filter="url(#axiom-glow)" />
-      <circle cx="6.8" cy="34" r="1.4" fill="#60a5fa" filter="url(#axiom-glow)" />
-      <circle cx="41.2" cy="34" r="1.4" fill="#c084fc" filter="url(#axiom-glow)" />
+      {/* ─── INNER FACET RECESS (Geometric Depth Shadow) ─── */}
+      <path
+        d="M32 26L32 47L23 38.5L32 26Z"
+        fill="#000000"
+        fillOpacity="0.22"
+      />
+
+      {/* ─── APEX REFLECTIVE LIGHT BEVEL ─── */}
+      <path
+        d="M32 10L27 21L32 19L37 21L32 10Z"
+        fill="url(#axiom-apex-cap)"
+      />
+
+      {/* Specular Core Glimmer Dot */}
+      <circle cx="32" cy="36.5" r="2.2" fill="#ffffff" />
     </svg>
   );
 }

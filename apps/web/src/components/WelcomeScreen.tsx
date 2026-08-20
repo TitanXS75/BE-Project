@@ -180,14 +180,11 @@ export function WelcomeScreen({ onStart, onHowItWorks, onDownloadExe }: WelcomeS
                 <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-none">
                   Axiom AI
                 </span>
-                <span className="text-[11px] sm:text-xs text-[#86868b] tracking-wider uppercase font-mono mt-1.5 font-semibold">
-                  Curriculum AI Core
-                </span>
               </div>
             </div>
 
             <h1 className="text-3xl sm:text-5xl md:text-5xl lg:text-[50px] font-bold tracking-tight text-white leading-[1.12] max-w-2xl">
-              Curriculum Grounded AI <br />
+              RAG Intelligent Learning Platform <br />
               <span className="text-[#86868b]">
                 Engineered for Your Laptop.
               </span>

@@ -26,6 +26,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Axiom AI — Curriculum-Aware Local AI Platform",
   description: "Local-first, air-gapped AI education platform with portable .rssh knowledge packages.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

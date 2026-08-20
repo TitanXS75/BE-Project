@@ -135,7 +135,7 @@ export function AttendanceTracker() {
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
-            <span>Attendance successfully saved and synced to Supabase.</span>
+            <span>Attendance records successfully saved and synchronized.</span>
           </div>
         </div>
       )}

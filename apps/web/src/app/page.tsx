@@ -41,6 +41,7 @@ export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("welcome");
   const [mode, setMode] = useState<Mode>("student");
   const [primaryRole, setPrimaryRole] = useState<"student" | "teacher">("student");
+  const [portalView, setPortalView] = useState<"workspace" | "erp">("workspace");
   const [portalTransition, setPortalTransition] = useState<"to_erp" | "to_workspace" | null>(null);
   const [studentTab, setStudentTab] = useState<StudentTab>("chat");
   const [teacherTab, setTeacherTab] = useState<TeacherTab>("curriculum");
@@ -404,6 +405,7 @@ export default function Home() {
   // Handle Role Chosen -> Sets role and launches Stepper calibration
   const handleRoleChosen = (selectedRole: Mode) => {
     setMode(selectedRole);
+    setPortalView(selectedRole === "admin" ? "erp" : "workspace");
     if (selectedRole === "teacher") {
       setPrimaryRole("teacher");
     } else if (selectedRole === "student") {
@@ -667,6 +669,7 @@ export default function Home() {
             } else if (mode === "student") {
               setPrimaryRole("student");
             }
+            setPortalView(mode === "admin" ? "erp" : "workspace");
             setStudentInHub(true);
             setTeacherInHub(true);
             setAdminInHub(true);
@@ -709,6 +712,7 @@ export default function Home() {
           {/* Sidebar */}
           <WorkspaceSidebar
             mode={mode}
+            portalView={portalView}
             studentTab={studentTab}
             setStudentTab={(tab) => {
               setStudentTab(tab);
@@ -727,12 +731,19 @@ export default function Home() {
             diagnostics={diagnostics}
             onOpenSpecsModal={() => setShowSpecsModal(true)}
             onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
+            onSwitchToErp={() => {
+              setPortalTransition("to_erp");
+            }}
+            onReturnFromErp={() => {
+              setPortalTransition("to_workspace");
+            }}
           />
 
           {/* Main Content Area */}
           <main className="flex-1 flex flex-col bg-black overflow-hidden">
             <WorkspaceHeader
               mode={mode}
+              portalView={portalView}
               activeSubject={activeSubject}
               activeUnit={activeUnit}
               setActiveUnit={setActiveUnit}
@@ -762,8 +773,8 @@ export default function Home() {
             />
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {mode === "admin" ? (
-                adminInHub ? (
+              {portalView === "erp" || mode === "admin" ? (
+                mode === "admin" && adminInHub ? (
                   <AdminWelcomeHub
                     onEnterTab={(tab) => {
                       setAdminTab(tab);
@@ -914,6 +925,7 @@ export default function Home() {
             onClose={() => setShowLogoutConfirm(false)}
             onConfirm={() => {
               setShowLogoutConfirm(false);
+              setPortalView("workspace");
               setStudentInHub(true);
               setTeacherInHub(true);
               setAdminInHub(true);
@@ -926,7 +938,7 @@ export default function Home() {
             <ErpPortalTransition
               destination="erp"
               onComplete={() => {
-                setMode("admin");
+                setPortalView("erp");
                 setAdminInHub(false);
                 setPortalTransition(null);
               }}
@@ -937,7 +949,7 @@ export default function Home() {
             <ErpPortalTransition
               destination="workspace"
               onComplete={() => {
-                setMode(primaryRole);
+                setPortalView("workspace");
                 setPortalTransition(null);
               }}
             />

@@ -32,6 +32,7 @@ import { SystemDiagnostics, CloudAiConfig } from "@/lib/api";
 
 interface WorkspaceSidebarProps {
   mode: "student" | "teacher" | "admin";
+  portalView?: "workspace" | "erp";
   studentTab: StudentTab;
   setStudentTab: (tab: StudentTab) => void;
   teacherTab: TeacherTab;
@@ -46,10 +47,13 @@ interface WorkspaceSidebarProps {
   cloudConfig?: CloudAiConfig;
   onOpenAIModelModal?: () => void;
   selectedModel?: string;
+  onSwitchToErp?: () => void;
+  onReturnFromErp?: () => void;
 }
 
 export function WorkspaceSidebar({
   mode,
+  portalView = "workspace",
   studentTab,
   setStudentTab,
   teacherTab,
@@ -59,6 +63,8 @@ export function WorkspaceSidebar({
   diagnostics,
   onOpenSpecsModal,
   onOpenLogoutConfirm,
+  onSwitchToErp,
+  onReturnFromErp,
 }: WorkspaceSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -66,7 +72,7 @@ export function WorkspaceSidebar({
     if (mode === "student") {
       return {
         title: "Student Workspace",
-        subtitle: "Learner Profile • Active",
+        subtitle: portalView === "erp" ? "Learner Profile • ERP Active" : "Learner Profile • Active",
         icon: <GraduationCap className="h-5 w-5" />,
         badgeBg: "bg-[#0071e3]/20 text-[#0071e3]",
         iconBg: "bg-[#0071e3]/15 text-[#0071e3] border-[#0071e3]/20",
@@ -75,7 +81,7 @@ export function WorkspaceSidebar({
     if (mode === "teacher") {
       return {
         title: "Teacher Studio",
-        subtitle: "Faculty Profile • Active",
+        subtitle: portalView === "erp" ? "Faculty Profile • ERP Active" : "Faculty Profile • Active",
         icon: <BookOpen className="h-5 w-5" />,
         badgeBg: "bg-[#ff9f0a]/20 text-[#ff9f0a]",
         iconBg: "bg-[#ff9f0a]/15 text-[#ff9f0a] border-[#ff9f0a]/20",
@@ -158,16 +164,234 @@ export function WorkspaceSidebar({
         <div className={`flex flex-col gap-1.5 ${isCollapsed ? "items-center w-full mt-2" : "mt-1"}`}>
           {!isCollapsed && (
             <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider px-2 mb-1">
-              {mode === "student"
+              {portalView === "erp" || mode === "admin"
+                ? mode === "student"
+                  ? "Student ERP Records"
+                  : mode === "teacher"
+                  ? "Faculty ERP Portal"
+                  : "Enterprise Administration"
+                : mode === "student"
                 ? "Student Learning Tools"
-                : mode === "teacher"
-                ? "Instructor Authoring Studio"
-                : "Enterprise Administration"}
+                : "Instructor Authoring Studio"}
             </span>
           )}
 
-          {/* Student Tabs */}
-          {mode === "student" && (
+          {/* ─── ERP VIEW (For Student, Teacher, or Admin in ERP Portal) ─── */}
+          {portalView === "erp" || mode === "admin" ? (
+            <>
+              {/* Return to Learning/Authoring Workspace Button (When Student or Teacher is in ERP) */}
+              {mode !== "admin" && onReturnFromErp && (
+                <button
+                  onClick={onReturnFromErp}
+                  title={mode === "teacher" ? "Return to Authoring Studio" : "Return to Learning Workspace"}
+                  className={`flex items-center rounded-2xl transition-all cursor-pointer mb-1 ${
+                    isCollapsed
+                      ? "h-11 w-11 justify-center bg-[#0071e3]/15 text-[#0071e3] border border-[#0071e3]/30 hover:bg-[#0071e3]/25 shadow-sm"
+                      : "w-full gap-3 px-3.5 py-2.5 text-xs font-semibold bg-[#0071e3]/15 text-[#0071e3] border border-[#0071e3]/30 hover:bg-[#0071e3]/25 shadow-sm"
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
+                  {!isCollapsed && (
+                    <span>{mode === "teacher" ? "Return to Authoring Studio" : "Return to Learning Tools"}</span>
+                  )}
+                </button>
+              )}
+
+              {setAdminTab && (
+                <>
+                  <button
+                    onClick={() => setAdminTab("dashboard")}
+                    title="ERP Overview"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "dashboard"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "dashboard"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
+                    {!isCollapsed && <span>ERP Dashboard</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("academic")}
+                    title="Academic Structure"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "academic"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "academic"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
+                    {!isCollapsed && <span>Academic &amp; Classes</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("students")}
+                    title="Student Roster"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "students"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "students"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <GraduationCap className="h-4 w-4 text-[#30d158] flex-shrink-0" />
+                    {!isCollapsed && <span>Student Directory</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("teachers")}
+                    title="Faculty Directory"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "teachers"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "teachers"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Users className="h-4 w-4 text-[#38bdf8] flex-shrink-0" />
+                    {!isCollapsed && <span>Faculty Directory</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("attendance")}
+                    title="Attendance Tracker"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "attendance"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "attendance"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <CalendarCheck className="h-4 w-4 text-[#a855f7] flex-shrink-0" />
+                    {!isCollapsed && <span>Attendance Tracker</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("exams")}
+                    title="Exam &amp; Grade Center"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "exams"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "exams"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Award className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
+                    {!isCollapsed && <span>Exams &amp; Grading</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("timetable")}
+                    title="Timetable Scheduler"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "timetable"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "timetable"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Clock className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
+                    {!isCollapsed && <span>Timetable Routines</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("notices")}
+                    title="Notice Board"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "notices"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "notices"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Megaphone className="h-4 w-4 text-[#ec4899] flex-shrink-0" />
+                    {!isCollapsed && <span>Notice Board</span>}
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab("events")}
+                    title="Calendar Events"
+                    className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                      isCollapsed
+                        ? `h-11 w-11 justify-center ${
+                            adminTab === "events"
+                              ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                        : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                            adminTab === "events"
+                              ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                              : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                          }`
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4 text-[#38bdf8] flex-shrink-0" />
+                    {!isCollapsed && <span>Calendar Events</span>}
+                  </button>
+                </>
+              )}
+            </>
+          ) : mode === "student" ? (
+            /* ─── STUDENT LEARNING TOOLS ─── */
             <>
               <button
                 onClick={() => setStudentTab("chat")}
@@ -252,11 +476,30 @@ export function WorkspaceSidebar({
                 <TrendingUp className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
                 {!isCollapsed && <span>PYQ Trend Analyzer</span>}
               </button>
-            </>
-          )}
 
-          {/* Teacher Tabs */}
-          {mode === "teacher" && (
+              {/* Quick ERP Switcher Button for Student */}
+              {onSwitchToErp && (
+                <button
+                  onClick={onSwitchToErp}
+                  title="Open ERP Records"
+                  className={`flex items-center rounded-2xl transition-all cursor-pointer mt-2 border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/[0.07] ${
+                    isCollapsed
+                      ? "h-11 w-11 justify-center text-[#86868b] hover:text-white"
+                      : "w-full gap-3 px-3.5 py-2 text-xs font-medium text-[#86868b] hover:text-white"
+                  }`}
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <div className="flex items-center justify-between w-full">
+                      <span>ERP Records</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-semibold">Portal</span>
+                    </div>
+                  )}
+                </button>
+              )}
+            </>
+          ) : (
+            /* ─── TEACHER STUDIO TOOLS ─── */
             <>
               <button
                 onClick={() => setTeacherTab("curriculum")}
@@ -341,200 +584,27 @@ export function WorkspaceSidebar({
                 <Package className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
                 {!isCollapsed && <span>Export .rssh Package</span>}
               </button>
-            </>
-          )}
 
-          {/* Admin Tabs */}
-          {mode === "admin" && setAdminTab && (
-            <>
-              <button
-                onClick={() => setAdminTab("dashboard")}
-                title="ERP Overview"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "dashboard"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "dashboard"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <LayoutDashboard className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
-                {!isCollapsed && <span>ERP Dashboard</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("academic")}
-                title="Academic Structure"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "academic"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "academic"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Building2 className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
-                {!isCollapsed && <span>Academic &amp; Classes</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("students")}
-                title="Student Roster"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "students"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "students"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <GraduationCap className="h-4 w-4 text-[#30d158] flex-shrink-0" />
-                {!isCollapsed && <span>Student Directory</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("teachers")}
-                title="Faculty Directory"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "teachers"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "teachers"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Users className="h-4 w-4 text-[#38bdf8] flex-shrink-0" />
-                {!isCollapsed && <span>Faculty Directory</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("attendance")}
-                title="Attendance Tracker"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "attendance"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "attendance"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <CalendarCheck className="h-4 w-4 text-[#a855f7] flex-shrink-0" />
-                {!isCollapsed && <span>Attendance Tracker</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("exams")}
-                title="Exam &amp; Grade Center"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "exams"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "exams"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Award className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
-                {!isCollapsed && <span>Exams &amp; Grading</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("timetable")}
-                title="Timetable Scheduler"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "timetable"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "timetable"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Clock className="h-4 w-4 text-[#0071e3] flex-shrink-0" />
-                {!isCollapsed && <span>Timetable Routines</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("notices")}
-                title="Notice Board"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "notices"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "notices"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Megaphone className="h-4 w-4 text-[#ec4899] flex-shrink-0" />
-                {!isCollapsed && <span>Notice Board</span>}
-              </button>
-
-              <button
-                onClick={() => setAdminTab("events")}
-                title="Calendar Events"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        adminTab === "events"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        adminTab === "events"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Calendar className="h-4 w-4 text-[#38bdf8] flex-shrink-0" />
-                {!isCollapsed && <span>Calendar Events</span>}
-              </button>
+              {/* Quick ERP Switcher Button for Teacher */}
+              {onSwitchToErp && (
+                <button
+                  onClick={onSwitchToErp}
+                  title="Open ERP Records"
+                  className={`flex items-center rounded-2xl transition-all cursor-pointer mt-2 border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/[0.07] ${
+                    isCollapsed
+                      ? "h-11 w-11 justify-center text-[#86868b] hover:text-white"
+                      : "w-full gap-3 px-3.5 py-2 text-xs font-medium text-[#86868b] hover:text-white"
+                  }`}
+                >
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <div className="flex items-center justify-between w-full">
+                      <span>ERP Records</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-semibold">Portal</span>
+                    </div>
+                  )}
+                </button>
+              )}
             </>
           )}
         </div>

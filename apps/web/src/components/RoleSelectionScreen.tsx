@@ -72,7 +72,7 @@ export function RoleSelectionScreen({
       description:
         "Comprehensive administrative ERP for managing student admissions, faculty appointments, roll-call attendance, grade sheets, and timetables.",
       features: [
-        "Cloud database synchronization with Supabase",
+        "Centralized institutional records & database management",
         "Unified student directory & faculty registry",
         "Subject-wise attendance tracker & analytics",
         "Exam scheduler, routine planner & circulars",

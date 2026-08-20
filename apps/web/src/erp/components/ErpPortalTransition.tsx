@@ -20,9 +20,9 @@ export function ErpPortalTransition({
   const steps = isEnteringErp
     ? [
         { label: "Verifying Institutional Permissions", icon: ShieldCheck },
-        { label: "Connecting to Cloud Database & Tables", icon: Database },
+        { label: "Connecting to Institutional Records", icon: Database },
         { label: "Hydrating Admissions & Academic Assets", icon: Layers },
-        { label: "Mounting ERP Administration Console", icon: Sparkles },
+        { label: "Mounting Institutional ERP Console", icon: Sparkles },
       ]
     : [
         { label: "Saving Active ERP State", icon: Database },
@@ -77,7 +77,7 @@ export function ErpPortalTransition({
         </h2>
         <p className="text-xs text-[#86868b] mt-1 max-w-xs">
           {isEnteringErp
-            ? "Establishing secure bridge to cloud database and administrative registry."
+            ? "Establishing secure bridge to institutional records and academic registry."
             : "Switching to your local air-gapped curriculum workspace."}
         </p>
 
