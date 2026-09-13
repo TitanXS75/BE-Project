@@ -8,7 +8,7 @@ import FlowingMenu, { FlowingMenuItem } from "./FlowingMenu";
 import Strands from "./Strands";
 import {
   SiReact,
-  SiNextdotjs,
+  SiVite,
   SiTypescript,
   SiTailwindcss,
   SiPython,
@@ -29,12 +29,12 @@ const techStackLogos = [
   {
     node: (
       <div className="flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] hover:border-white/30 hover:bg-white/[0.12] transition-all shadow-md">
-        <SiNextdotjs className="h-5 w-5 text-white" />
-        <span className="text-sm sm:text-base font-bold text-[#f5f5f7]">Next.js 16</span>
+        <SiVite className="h-5 w-5 text-[#BD34FE]" />
+        <span className="text-sm sm:text-base font-bold text-[#f5f5f7]">Vite 6</span>
       </div>
     ),
-    title: "Next.js",
-    href: "https://nextjs.org"
+    title: "Vite",
+    href: "https://vite.dev"
   },
   {
     node: (
@@ -170,15 +170,14 @@ export function WelcomeScreen({ onStart, onHowItWorks, onDownloadExe }: WelcomeS
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-12">
           {/* Left Hero Column */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            {/* Axiom AI Brand Header with Enlarged Logo */}
+            {/* Axiom Brand Header with Enlarged Logo */}
             <div className="flex items-center gap-3.5 sm:gap-4.5 mb-6 sm:mb-7 group">
               <div className="relative flex items-center justify-center">
                 <AxiomLogo className="h-12 w-12 sm:h-15 sm:w-15 transition-transform duration-300 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-[#3b82f6]/30 blur-xl rounded-full -z-10 group-hover:bg-[#a855f7]/40 transition-colors" />
               </div>
               <div className="flex flex-col justify-center">
                 <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-none">
-                  Axiom AI
+                  Axiom
                 </span>
               </div>
             </div>

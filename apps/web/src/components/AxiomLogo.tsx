@@ -44,9 +44,6 @@ export function AxiomLogo({ className = "h-8 w-8" }: { className?: string }) {
         </filter>
       </defs>
 
-      {/* Background Soft Optical Glow */}
-      <circle cx="32" cy="32" r="22" fill="#0071e3" fillOpacity="0.12" filter="url(#axiom-core-glow)" />
-
       {/* ─── LEFT FACET PILLAR (Ascending A-Leg) ─── */}
       <path
         d="M32 10L14 46C13.2 47.6 14.4 49.5 16.2 49.5H23.5C24.4 49.5 25.2 48.9 25.6 48.1L32 34.5L34 30L32 10Z"

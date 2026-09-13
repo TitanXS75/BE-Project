@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ArchitectureScreen } from "@/components/ArchitectureScreen";

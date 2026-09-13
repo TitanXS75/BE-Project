@@ -36,7 +36,7 @@ python3 -m uvicorn app.main:app --reload --port 8000
 
 ---
 
-### 2. Start the Frontend Web App (Next.js)
+### 2. Start the Frontend Web App (Vite + React 19)
 
 Open a second terminal window and run:
 
@@ -85,7 +85,7 @@ To enable local LLM generation without cloud dependencies:
 
 | Service | Technology | Default URL / Port |
 | :--- | :--- | :--- |
-| **Web Frontend** | Next.js 16 (React 19) | `http://localhost:7575` |
+| **Web Frontend** | Vite (React 19) | `http://localhost:7575` |
 | **Backend API** | FastAPI (Python) | `http://127.0.0.1:8000` |
 | **Interactive Docs** | OpenAPI / Swagger | `http://127.0.0.1:8000/docs` |
 | **Local LLM Engine** | Ollama | `http://127.0.0.1:11434` |

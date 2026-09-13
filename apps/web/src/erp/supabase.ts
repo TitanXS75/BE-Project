@@ -15,8 +15,14 @@ import {
   INITIAL_ERP_DATA,
 } from "./types";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SUPABASE_URL) ||
+  (import.meta as any).env?.VITE_SUPABASE_URL ||
+  "";
+const supabaseAnonKey =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY) ||
+  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
+  "";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 

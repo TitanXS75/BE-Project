@@ -1,4 +1,7 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+export const API_BASE_URL =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL) ||
+  (import.meta as any).env?.VITE_API_URL ||
+  "http://127.0.0.1:8000/api/v1";
 
 export interface SystemStatus {
   api_status: string;

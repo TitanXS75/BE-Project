@@ -27,7 +27,7 @@ This repository contains **Axiom**, a local-first, air-gapped curriculum-aware l
 ---
 
 ## 3. Technology Stack & Directory Structure
-- `apps/web`: Next.js 16 (App Router), React 19, Tailwind CSS v4, Motion React, GSAP, Lucide React.
+- `apps/web`: Vite (Single Page Application), React 19, Tailwind CSS v4, Motion React, GSAP, Lucide React.
 - `apps/local-api`: Python 3.13 FastAPI backend, LanceDB vector database, Ollama client, SQLite metadata engine.
 - `apps/desktop`: Electron container with native `.rssh` file associations and offline IPC.
 - `packages/common` & `packages/ui`: Shared TypeScript data models, schemas, and UI design tokens.

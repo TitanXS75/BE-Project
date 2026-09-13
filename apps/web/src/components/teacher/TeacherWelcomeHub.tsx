@@ -6,7 +6,6 @@ import {
   PlusCircle,
   FileEdit,
   FolderOpen,
-  ArrowRight,
   Sparkles,
   Layers,
   FileText,
@@ -104,9 +103,9 @@ export function TeacherWelcomeHub({
 
           <div className="flex items-center justify-between pt-4 border-t border-white/[0.06] text-xs">
             <span className="text-[#86868b]">Scaffold fresh .rssh package</span>
-            <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] group-hover:translate-x-1 transition-all">
+            <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] transition-all">
               <span>Start Creation</span>
-              <ArrowRight className="h-4 w-4" />
+              <PlusCircle className="h-3.5 w-3.5 text-[#0071e3]" />
             </div>
           </div>
         </div>

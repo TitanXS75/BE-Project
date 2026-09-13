@@ -14,8 +14,7 @@ import {
   Cpu,
   BookOpen,
   FileText,
-  Binary,
-  ArrowUpRight
+  Binary
 } from "lucide-react";
 import { inspectRSSHPackage, RSSHInspectionData, API_BASE_URL } from "@/lib/api";
 
