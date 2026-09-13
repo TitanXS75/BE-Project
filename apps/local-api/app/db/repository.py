@@ -62,6 +62,9 @@ class SubjectRepository:
         await self.db.commit()
         return did
 
+    async def register_document(self, filename: str, doc_type: str, file_size_bytes: int = 0, unit_id: Optional[str] = None, doc_id: Optional[str] = None) -> str:
+        return await self.insert_document(filename, doc_type, file_size_bytes, unit_id, doc_id)
+
     async def list_documents(self) -> List[Dict[str, Any]]:
         async with self.db.execute("SELECT * FROM documents ORDER BY created_at DESC") as cursor:
             rows = await cursor.fetchall()

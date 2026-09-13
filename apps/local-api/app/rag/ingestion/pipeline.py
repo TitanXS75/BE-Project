@@ -42,26 +42,63 @@ class IngestionPipeline:
             db.row_factory = aiosqlite.Row
             repo = SubjectRepository(db)
 
-            # 2. Register Document in SQLite
+            # 2. Verify and resolve unit_id if provided to maintain database integrity
+            resolved_unit_id: Optional[str] = None
+            if unit_id:
+                clean_u = unit_id.strip()
+                # Exact match by id
+                async with db.execute("SELECT id FROM units WHERE id = ?", (clean_u,)) as cur:
+                    row = await cur.fetchone()
+                    if row:
+                        resolved_unit_id = row["id"]
+
+                # Match by title
+                if not resolved_unit_id:
+                    async with db.execute(
+                        "SELECT id FROM units WHERE title LIKE ? ORDER BY unit_number ASC LIMIT 1",
+                        (f"%{clean_u}%",)
+                    ) as cur:
+                        row = await cur.fetchone()
+                        if row:
+                            resolved_unit_id = row["id"]
+
+                # Match by unit number (e.g. '1' or 'Unit 2')
+                if not resolved_unit_id:
+                    import re
+                    num_match = re.search(r"\b(\d+)\b", clean_u)
+                    if num_match:
+                        u_num = int(num_match.group(1))
+                        async with db.execute("SELECT id FROM units WHERE unit_number = ?", (u_num,)) as cur:
+                            row = await cur.fetchone()
+                            if row:
+                                resolved_unit_id = row["id"]
+                            else:
+                                clean_title = clean_u.replace(f"Unit {u_num}", "").strip(" :-") or "General Syllabus Concepts"
+                                resolved_unit_id = await repo.create_unit(
+                                    unit_number=u_num,
+                                    title=f"Unit {u_num}: {clean_title}"
+                                )
+
+            # 3. Register Document in SQLite
             doc_id = await repo.insert_document(
                 filename=file_path.name,
                 doc_type=doc_type,
                 file_size_bytes=file_path.stat().st_size,
-                unit_id=unit_id
+                unit_id=resolved_unit_id
             )
 
-            # 3. Chunk text semantically
+            # 4. Chunk text semantically
             chunks = self.chunker.chunk_pages(
                 pages=pages,
                 document_id=doc_id,
-                unit_id=unit_id,
+                unit_id=resolved_unit_id,
                 chapter_id=chapter_id
             )
 
-            # 4. Insert chunks into SQLite and FTS5
+            # 5. Insert chunks into SQLite and FTS5
             await repo.insert_chunks(chunks)
 
-            # Update document chunk count
+            # Update document chunk count consistently
             await db.execute("UPDATE documents SET chunk_count = ? WHERE id = ?", (len(chunks), doc_id))
             await db.commit()
 
@@ -73,7 +110,7 @@ class IngestionPipeline:
             vector_records.append({
                 "id": chk.get("id") or f"chk_{doc_id}_{chk['chunk_index']}",
                 "document_id": doc_id,
-                "unit_id": unit_id or "",
+                "unit_id": resolved_unit_id or "",
                 "chapter_id": chapter_id or "",
                 "text": chk["text_content"],
                 "page_number": chk.get("page_number", 1),
@@ -86,6 +123,7 @@ class IngestionPipeline:
             "status": "completed",
             "document_id": doc_id,
             "filename": file_path.name,
+            "unit_id": resolved_unit_id,
             "pages_extracted": len(pages),
             "chunks_created": len(chunks),
             "vectors_indexed": vectors_added

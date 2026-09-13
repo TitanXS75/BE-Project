@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import shutil
@@ -160,7 +161,7 @@ async def inspect_package(package_id: str):
                 if row:
                     total_chunks = row["c"]
 
-            async with db.execute("SELECT id, year, marks, bloom_level, topic_tag, SUBSTR(question_text, 1, 80) as preview FROM pyqs LIMIT 10") as cur:
+            async with db.execute("SELECT id, year, exam_term, marks, unit_id, frequency_score, SUBSTR(question_text, 1, 80) as preview FROM pyq_questions LIMIT 10") as cur:
                 rows = await cur.fetchall()
                 pyqs_list = [dict(r) for r in rows]
 
@@ -168,8 +169,15 @@ async def inspect_package(package_id: str):
     vectors_dir = subject_dir / "vectors"
     vectors_exist = vectors_dir.exists()
     vectors_size_bytes = 0
+    vectors_indexed_count = 0
     if vectors_exist:
         vectors_size_bytes = sum(f.stat().st_size for f in vectors_dir.glob("**/*") if f.is_file())
+        try:
+            from app.rag.vector.lancedb_client import LanceVectorStore
+            store = LanceVectorStore(vectors_dir)
+            vectors_indexed_count = store.count()
+        except Exception:
+            vectors_indexed_count = 0
 
     # Build archive tree representation
     archive_tree = []
@@ -208,8 +216,8 @@ async def inspect_package(package_id: str):
             "engine": "LanceDB Embedded (Dense)",
             "dimensions": 1536,
             "metric": "Cosine Similarity (1 - cos(θ))",
-            "indexed_chunks": total_chunks if total_chunks > 0 else (len(documents_list) * 12 or 48),
-            "storage_bytes": vectors_size_bytes or 65536
+            "indexed_chunks": vectors_indexed_count if vectors_indexed_count > 0 else total_chunks,
+            "storage_bytes": vectors_size_bytes
         },
         "archive_tree": archive_tree
     }
@@ -255,6 +263,27 @@ async def export_subject_package(package_id: str):
         raise HTTPException(status_code=404, detail="Subject package not found.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to bundle package: {str(e)}")
+
+
+@router.get("/download/{package_id}", summary="Download compiled .rssh subject archive")
+async def download_subject_package(package_id: str):
+    """Streams the compiled .rssh package archive as a downloadable attachment."""
+    subject_dir = settings.SUBJECTS_DIR / package_id
+    if not subject_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Subject package '{package_id}' not found.")
+
+    output_path = settings.UPLOADS_DIR / f"{package_id}.rssh"
+    if not output_path.exists():
+        try:
+            output_path, _ = await SubjectPackager.compile_package(package_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to compile .rssh package: {str(e)}")
+
+    return FileResponse(
+        path=str(output_path),
+        media_type="application/octet-stream",
+        filename=f"{package_id}.rssh"
+    )
 
 
 @router.delete("/{package_id}", summary="Delete an imported subject workspace")
@@ -340,9 +369,9 @@ async def ensure_default_subjects_seeded():
 
     for pkg in default_packages:
         pkg_dir = settings.SUBJECTS_DIR / pkg["id"]
-        if not pkg_dir.exists():
-            pkg_dir.mkdir(parents=True, exist_ok=True)
-            db_path = pkg_dir / "subject.db"
+        pkg_dir.mkdir(parents=True, exist_ok=True)
+        db_path = pkg_dir / "subject.db"
+        if not db_path.exists():
             await init_subject_database(db_path)
 
             async with aiosqlite.connect(db_path) as db:

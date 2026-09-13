@@ -133,22 +133,22 @@ flowchart TD
 
 ---
 
-### Phase 7: Backend Robustness & File Serving Engine
+### Phase 7: Backend Robustness & File Serving Engine [COMPLETED]
 
 **Objective**: Ensure all database schemas, file generation pipelines, and HTTP file response streams operate with zero runtime errors.
 
 #### Tasks:
-1. **Fix `packages.py` SQL Query in `inspect_package`**:
+1. **Fix `packages.py` SQL Query in `inspect_package`**: [DONE]
    - Correct table query from `FROM pyqs` to `FROM pyq_questions`.
    - Update selected columns to match `schema.py` (`id, year, exam_term, question_text, marks, unit_id, frequency_score`).
-2. **Implement File Serving Endpoints**:
+2. **Implement File Serving Endpoints**: [DONE]
    - `GET /api/v1/packages/download/{package_id}`: Streams compiled `.rssh` archive as an attachment with appropriate headers (`application/octet-stream`).
    - `GET /api/v1/teacher/download-material/{subject_id}/{filename}`: Streams generated `.pptx` or `.docx` files.
-3. **Implement Real `.docx` Exam Paper Exporter**:
+3. **Implement Real `.docx` Exam Paper Exporter**: [DONE]
    - In `apps/local-api/app/ai/teacher/exam_builder.py`, implement `export_docx()` using `python-docx`.
    - Formats institution header, course code, duration, total marks, instructions, Section A (Short), Section B (Analytical), and Section C (Comprehensive) with clean typography.
    - Saves file to `subject_dir / "generated_materials" / "{exam_title}.docx"`.
-4. **Implement Unit Ingestion Verification**:
+4. **Implement Unit Ingestion Verification**: [DONE]
    - Ensure `IngestionPipeline` verifies unit existence and updates document chunk counts consistently in SQLite.
 
 ---

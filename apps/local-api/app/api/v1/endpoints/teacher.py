@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+from pathlib import Path
+from app.config import settings
 from app.ai.teacher.exam_builder import ExamPaperBuilder
 from app.ai.teacher.pyq_analyzer import PYQTrendAnalyzer
 from app.ai.teacher.slide_generator import LectureSlideGenerator
@@ -159,3 +162,33 @@ async def get_pyq_trends(subject_id: str):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze PYQ trends: {str(e)}")
+
+
+@router.get("/download-material/{subject_id}/{filename}", summary="Download generated teacher material (.docx, .pptx)")
+async def download_teacher_material(subject_id: str, filename: str):
+    """Securely streams generated material file (.docx, .pptx) for a subject."""
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename format.")
+
+    subject_dir = settings.SUBJECTS_DIR / subject_id
+    materials_dir = subject_dir / "generated_materials"
+    target_file = materials_dir / filename
+
+    if not target_file.exists() or not target_file.is_file():
+        raise HTTPException(status_code=404, detail=f"Material file '{filename}' not found.")
+
+    suffix = target_file.suffix.lower()
+    if suffix == ".docx":
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif suffix == ".pptx":
+        media_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    elif suffix == ".pdf":
+        media_type = "application/pdf"
+    else:
+        media_type = "application/octet-stream"
+
+    return FileResponse(
+        path=str(target_file),
+        media_type=media_type,
+        filename=filename
+    )
