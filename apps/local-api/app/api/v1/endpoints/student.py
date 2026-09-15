@@ -18,7 +18,7 @@ class QuizGenerationRequest(BaseModel):
 
 class QuizGradeRequest(BaseModel):
     questions: List[Dict[str, Any]]
-    submitted_answers: Dict[str, str]
+    submitted_answers: Dict[str, Any]
 
 
 class TeachBackEvaluationRequest(BaseModel):

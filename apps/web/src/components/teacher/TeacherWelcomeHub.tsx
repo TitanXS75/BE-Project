@@ -11,8 +11,10 @@ import {
   FileText,
   Upload,
   CheckCircle2,
+  AlertCircle,
   X
 } from "lucide-react";
+import { createSubjectWorkspace } from "@/lib/api";
 
 interface SubjectItem {
   name: string;
@@ -43,21 +45,52 @@ export function TeacherWelcomeHub({
   const [newSubjCode, setNewSubjCode] = useState("");
   const [newSubjUnits, setNewSubjUnits] = useState(4);
   const [selectedToUpdate, setSelectedToUpdate] = useState(activeSubject);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSubjName.trim()) return;
 
     const code = newSubjCode.trim() || `CS-${Math.floor(100 + Math.random() * 900)}`;
-    onCreateNewSubject({
-      name: newSubjName.trim(),
-      code,
-      units: Number(newSubjUnits) || 4
-    });
-    onSelectSubject(newSubjName.trim());
-    setShowCreateModal(false);
-    onEnterWorkspace("create");
+    const packageId = newSubjName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+    setIsCreating(true);
+    setCreateError(null);
+
+    try {
+      // Generate unit titles
+      const unitTitles: string[] = [];
+      for (let i = 1; i <= (Number(newSubjUnits) || 4); i++) {
+        unitTitles.push(`Unit ${i}: Module ${i}`);
+      }
+
+      await createSubjectWorkspace({
+        package_id: packageId,
+        subject_name: newSubjName.trim(),
+        academic_year: "2026-2027",
+        teacher_name: "Faculty / Instructor",
+        units: unitTitles
+      });
+
+      onCreateNewSubject({
+        name: newSubjName.trim(),
+        code,
+        units: Number(newSubjUnits) || 4
+      });
+      onSelectSubject(newSubjName.trim());
+      setShowCreateModal(false);
+      setNewSubjName("");
+      setNewSubjCode("");
+      setNewSubjUnits(4);
+      onEnterWorkspace("create");
+    } catch (err: any) {
+      setCreateError(err.message || "Failed to create subject workspace. Ensure the backend is running.");
+    } finally {
+      setIsCreating(false);
+    }
   };
+
 
   const handleUpdateSelect = (subjectName: string) => {
     setSelectedToUpdate(subjectName);
@@ -233,6 +266,13 @@ export function TeacherWelcomeHub({
                 Will generate <span className="text-white font-mono">{newSubjName ? `${newSubjName.replace(/\s+/g, "-")}-2026.rssh` : "Course-2026.rssh"}</span> with SQLite relational metadata and LanceDB vector schemas.
               </div>
 
+              {createError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-xs text-red-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {createError}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
                 <button
                   type="button"
@@ -243,13 +283,21 @@ export function TeacherWelcomeHub({
                 </button>
                 <button
                   type="submit"
-                  disabled={!newSubjName.trim()}
-                  className="px-6 py-2 rounded-xl btn-apple-primary text-xs font-medium cursor-pointer disabled:opacity-40"
+                  disabled={!newSubjName.trim() || isCreating}
+                  className="px-6 py-2 rounded-xl btn-apple-primary text-xs font-medium cursor-pointer disabled:opacity-40 flex items-center gap-2"
                 >
-                  Initialize Subject Studio
+                  {isCreating ? (
+                    <>
+                      <div className="h-3 w-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      Creating Workspace...
+                    </>
+                  ) : (
+                    "Initialize Subject Studio"
+                  )}
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}

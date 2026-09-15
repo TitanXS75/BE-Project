@@ -153,34 +153,35 @@ flowchart TD
 
 ---
 
-### Phase 8: Teacher Workspace Live Functional Integration
+### Phase 8: Teacher Workspace Live Functional Integration [COMPLETED]
 
 **Objective**: Replace all mock handlers in `TeacherWorkspace.tsx` and `TeacherWelcomeHub.tsx` with live backend API connections.
 
 #### Tasks:
-1. **Document Upload & Ingestion Component**:
+1. **Document Upload & Ingestion Component**: [DONE]
    - Add a drag-and-drop file upload zone supporting `.pdf`, `.docx`, `.txt`, `.pptx`.
    - Allow selecting target unit (`Unit 1`, `Unit 2`, etc.) and document type (`Syllabus`, `Textbook`, `Notes`, `PYQ`).
    - Wire upload to `POST /api/v1/documents/upload`.
    - Display real-time progress: pages extracted, semantic chunks created, vector embeddings stored in LanceDB.
    - Display list of uploaded documents via `GET /api/v1/documents/{subject_id}/list` with file sizes and timestamps.
-2. **Live Bloom's Taxonomy Exam Generator**:
+2. **Live Bloom's Taxonomy Exam Generator**: [DONE]
    - Remove `setTimeout()` mock in `TeacherWorkspace.tsx`.
    - Wire "Generate 100-Mark Blueprint" to `POST /api/v1/teacher/question-papers`.
    - Pass user-configured weights (`Remember`, `Understand`, `Apply`, `Analyze`) and target marks.
    - Render live returned sections (A, B, C) with question text, marks, cognitive level tags, and model marking keys.
    - Wire "Export Word (.docx)" button to trigger download of the real `.docx` file from backend.
-3. **Live Slide Deck Generator & Download**:
+3. **Live Slide Deck Generator & Download**: [DONE]
    - Wire "Generate Presentation (.pptx)" to `POST /api/v1/teacher/presentations`.
    - Display returned slide breakdown.
    - Add a primary "Download Presentation (.pptx)" button triggering download of the real `.pptx` file.
-4. **Live .rssh Package Compilation & Download**:
+4. **Live .rssh Package Compilation & Download**: [DONE]
    - Remove `setTimeout()` mock in Export tab.
    - Wire "Compile & Download .rssh" to `POST /api/v1/packages/export/{subject_id}`.
    - Automatically trigger browser download of `[Subject-ID].rssh`.
-5. **Live Subject Creation in Teacher Hub**:
+5. **Live Subject Creation in Teacher Hub**: [DONE]
    - Wire "Create New Subject" modal in `TeacherWelcomeHub.tsx` to `POST /api/v1/packages/create`.
    - On success, refresh the subjects list and navigate into the newly created subject workspace.
+
 
 ---
 

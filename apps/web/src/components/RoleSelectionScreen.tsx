@@ -40,7 +40,7 @@ export function RoleSelectionScreen({
         "5-Year Past Exam (PYQ) trend analytics",
       ],
       buttonText: "Continue as Student",
-      buttonClass: "bg-[#0071e3] hover:bg-[#0077ed] text-white",
+      buttonClass: "bg-[#0071e3] hover:bg-[#0077ed] text-white font-semibold",
     },
     {
       id: "teacher" as UserRole,
@@ -179,7 +179,7 @@ export function RoleSelectionScreen({
                     e.stopPropagation();
                     onSelectRole(role.id);
                   }}
-                  className={`w-full py-3 sm:py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-bold tracking-wide transition-all shadow-md active:scale-[0.98] cursor-pointer flex items-center justify-center ${role.buttonClass}`}
+                  className={`w-full py-3 sm:py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md active:scale-[0.98] cursor-pointer flex items-center justify-center ${role.buttonClass}`}
                 >
                   <span>{role.buttonText}</span>
                 </button>

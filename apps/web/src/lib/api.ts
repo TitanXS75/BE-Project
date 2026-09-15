@@ -310,4 +310,181 @@ export async function fetchPYQTrends(subjectId: string): Promise<any> {
   return res.json();
 }
 
+export async function generateStudyPlan(payload: {
+  days_remaining?: number;
+  daily_hours?: number;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/student/study-plan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Failed to generate study plan");
+  return res.json();
+}
 
+export async function importRSSHPackage(formData: FormData): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/packages/import`, {
+    method: "POST",
+    body: formData
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Failed to import .rssh package");
+  }
+  return res.json();
+}
+
+
+// ─── TEACHER WORKSPACE API HELPERS ───
+
+export interface UploadDocumentResponse {
+  status: string;
+  document_id: string;
+  filename: string;
+  doc_type: string;
+  unit_id: string | null;
+  pages_extracted: number;
+  chunks_created: number;
+  vectors_indexed: number;
+  path: string;
+}
+
+export interface DocumentListItem {
+  filename: string;
+  size_bytes: number;
+  modified_at: number;
+}
+
+export interface ExamSection {
+  section_name: string;
+  marks_per_question: number;
+  questions: Array<{
+    question_number: number;
+    question_text: string;
+    marks: number;
+    bloom_level: string;
+    unit_ref: string;
+    marking_key?: string;
+  }>;
+}
+
+export interface ExamPaperResponse {
+  title: string;
+  subject_name: string;
+  institution_name: string;
+  academic_year: string;
+  duration_minutes: number;
+  total_marks: number;
+  blooms_distribution: Record<string, number>;
+  instructions: string[];
+  sections: ExamSection[];
+  markdown_preview: string;
+  docx_filename: string;
+  docx_download_url: string;
+  file_path: string;
+  file_size_bytes: number;
+}
+
+export interface CreateSubjectRequest {
+  package_id: string;
+  subject_name: string;
+  academic_year?: string;
+  teacher_name?: string;
+  institution_name?: string;
+  units?: string[];
+}
+
+export interface CreateSubjectResponse {
+  status: string;
+  package_id: string;
+  manifest: Record<string, any>;
+  path: string;
+}
+
+export async function uploadDocument(formData: FormData): Promise<UploadDocumentResponse> {
+  const res = await fetch(`${API_BASE_URL}/documents/upload`, {
+    method: "POST",
+    body: formData
+  });
+  if (!res.ok) throw new Error("Failed to upload document");
+  return res.json();
+}
+
+export async function listDocuments(subjectId: string): Promise<{ documents: DocumentListItem[]; total: number }> {
+  const res = await fetch(`${API_BASE_URL}/documents/${subjectId}/list`);
+  if (!res.ok) throw new Error("Failed to list documents");
+  return res.json();
+}
+
+export async function generateExamPaper(payload: {
+  subject_id: string;
+  exam_title?: string;
+  total_marks?: number;
+  duration_minutes?: number;
+  blooms_distribution?: Record<string, number>;
+  units_included?: string[];
+  cloud_api_key?: string;
+  cloud_provider?: string;
+  cloud_model?: string;
+}): Promise<ExamPaperResponse> {
+  const res = await fetch(`${API_BASE_URL}/teacher/question-papers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Failed to generate exam paper");
+  return res.json();
+}
+
+export async function downloadMaterial(subjectId: string, filename: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/teacher/download-material/${subjectId}/${filename}`);
+  if (!res.ok) throw new Error("Failed to download material");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function exportRSSHPackage(subjectId: string): Promise<{
+  status: string;
+  filename: string;
+  download_path: string;
+  size_bytes: number;
+  manifest: Record<string, any>;
+}> {
+  const res = await fetch(`${API_BASE_URL}/packages/export/${subjectId}`, {
+    method: "POST"
+  });
+  if (!res.ok) throw new Error("Failed to export .rssh package");
+  return res.json();
+}
+
+export async function downloadRSSHPackage(subjectId: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/packages/download/${subjectId}`);
+  if (!res.ok) throw new Error("Failed to download .rssh package");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${subjectId}.rssh`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function createSubjectWorkspace(payload: CreateSubjectRequest): Promise<CreateSubjectResponse> {
+  const res = await fetch(`${API_BASE_URL}/packages/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Failed to create subject workspace");
+  return res.json();
+}

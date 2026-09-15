@@ -23,6 +23,7 @@ import {
   Clock,
   Megaphone,
   Calendar,
+  FileQuestion,
 } from "lucide-react";
 import { AxiomLogo } from "../AxiomLogo";
 import { StudentTab } from "../student/StudentWorkspace";
@@ -415,6 +416,27 @@ export function WorkspaceSidebar({
               </button>
 
               <button
+                onClick={() => setStudentTab("quizzes")}
+                title="Adaptive Quizzes"
+                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                  isCollapsed
+                    ? `h-11 w-11 justify-center ${
+                        studentTab === "quizzes"
+                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                      }`
+                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                        studentTab === "quizzes"
+                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                      }`
+                }`}
+              >
+                <FileQuestion className="h-4 w-4 text-[#30d158] flex-shrink-0" />
+                {!isCollapsed && <span>Adaptive Quizzes</span>}
+              </button>
+
+              <button
                 onClick={() => setStudentTab("flashcards")}
                 title="Syllabus Flashcards"
                 className={`flex items-center rounded-2xl transition-all cursor-pointer ${
@@ -475,6 +497,27 @@ export function WorkspaceSidebar({
               >
                 <TrendingUp className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
                 {!isCollapsed && <span>PYQ Trend Analyzer</span>}
+              </button>
+
+              <button
+                onClick={() => setStudentTab("study_plan")}
+                title="Adaptive Study Plan"
+                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
+                  isCollapsed
+                    ? `h-11 w-11 justify-center ${
+                        studentTab === "study_plan"
+                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
+                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                      }`
+                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
+                        studentTab === "study_plan"
+                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
+                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
+                      }`
+                }`}
+              >
+                <CalendarCheck className="h-4 w-4 text-[#38bdf8] flex-shrink-0" />
+                {!isCollapsed && <span>Adaptive Study Plan</span>}
               </button>
 
               {/* Quick ERP Switcher Button for Student */}

@@ -6,6 +6,7 @@ import { OnboardingStepper } from "@/components/OnboardingStepper";
 import { SystemCheckScreen } from "@/components/SystemCheckScreen";
 import { ModelRecommendationScreen } from "@/components/ModelRecommendationScreen";
 import { RoleSelectionScreen } from "@/components/RoleSelectionScreen";
+import { AuthScreen, AuthUser } from "@/components/AuthScreen";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { StudentWorkspace, StudentTab } from "@/components/student/StudentWorkspace";
@@ -31,7 +32,7 @@ import {
   API_BASE_URL
 } from "@/lib/api";
 
-type AppScreen = "welcome" | "architecture" | "download" | "onboarding" | "system_check" | "model_recommendation" | "role_selection" | "workspace";
+type AppScreen = "welcome" | "architecture" | "download" | "onboarding" | "system_check" | "model_recommendation" | "role_selection" | "auth" | "workspace";
 type Mode = "student" | "teacher" | "admin";
 
 export default function Home() {
@@ -44,6 +45,7 @@ export default function Home() {
   const [studentTab, setStudentTab] = useState<StudentTab>("chat");
   const [teacherTab, setTeacherTab] = useState<TeacherTab>("curriculum");
   const [adminTab, setAdminTab] = useState<AdminTab>("dashboard");
+  const [, setAuthenticatedUser] = useState<AuthUser | null>(null);
 
   // Welcome Hub View States (Always show welcome hub upon entering)
   const [studentInHub, setStudentInHub] = useState(true);
@@ -179,8 +181,9 @@ export default function Home() {
         unit_id: activeUnit,
         count: 4
       });
-      if (res && res.flashcards && res.flashcards.length > 0) {
-        setFlashcards(res.flashcards);
+      const cards = res?.cards || res?.flashcards;
+      if (cards && cards.length > 0) {
+        setFlashcards(cards);
         setCardIndex(0);
         setIsFlipped(false);
       }
@@ -252,7 +255,36 @@ export default function Home() {
         questions_count: 4
       });
       if (res && res.questions && res.questions.length > 0) {
-        setQuizQuestions(res.questions);
+        const normalized = res.questions.map((q: any, idx: number) => {
+          let options = q.options;
+          let correct = q.correct ?? 0;
+          if (options && !Array.isArray(options) && typeof options === "object") {
+            const keys = ["A", "B", "C", "D"];
+            const optKeys = Object.keys(options);
+            const chosenKeys = keys.every((k) => k in options) ? keys : optKeys;
+            options = chosenKeys.map((k) => options[k]);
+            if (typeof q.correct_option === "string") {
+              const mappedIdx = chosenKeys.indexOf(q.correct_option.toUpperCase());
+              if (mappedIdx !== -1) correct = mappedIdx;
+            }
+          } else if (typeof q.correct_option === "string" && Array.isArray(options)) {
+            const charCode = q.correct_option.toUpperCase().charCodeAt(0) - 65;
+            if (charCode >= 0 && charCode < options.length) {
+              correct = charCode;
+            }
+          }
+          return {
+            id: q.id || idx + 1,
+            unit: q.unit_id || q.unit || activeUnit,
+            difficulty: q.difficulty || "medium",
+            question: q.question,
+            options: options || [],
+            correct: correct,
+            explanation: q.explanation || "",
+            source: q.page_reference ? `Page ${q.page_reference}` : (q.source || "Syllabus Grounding")
+          };
+        });
+        setQuizQuestions(normalized);
         setSelectedAnswers({});
       }
     } catch {
@@ -375,7 +407,15 @@ export default function Home() {
     const slug = activeSubject.toLowerCase().replace(/\s+/g, "-");
     fetchPYQTrends(slug)
       .then((data) => {
-        if (data && data.recurring_topics && data.recurring_topics.length > 0) {
+        if (data && data.high_probability_predictions && data.high_probability_predictions.length > 0) {
+          setPyqTopics(data.high_probability_predictions.map((p: any) => ({
+            topic: p.topic,
+            frequency: p.recurrence_history || `${p.unit || "Core"} Focus`,
+            weight: `${p.expected_marks || 10} Marks`,
+            probability: Math.round((p.probability_score ?? 0.8) * 100),
+            trend: (p.probability_score ?? 0) >= 0.85 ? "High Yield" : "Moderate"
+          })));
+        } else if (data && data.recurring_topics && data.recurring_topics.length > 0) {
           setPyqTopics(data.recurring_topics);
         }
       })
@@ -400,13 +440,26 @@ export default function Home() {
     setCurrentScreen("role_selection");
   };
 
-  // Handle Role Chosen -> Sets role and launches Stepper calibration
+  // Handle Role Chosen -> Sets role and redirects to login/signup page
   const handleRoleChosen = (selectedRole: Mode) => {
     setMode(selectedRole);
     setPortalView(selectedRole === "admin" ? "erp" : "workspace");
     if (selectedRole === "teacher") {
       setPrimaryRole("teacher");
     } else if (selectedRole === "student") {
+      setPrimaryRole("student");
+    }
+    setCurrentScreen("auth");
+  };
+
+  // Handle Authentication Success -> Sets user and launches Stepper calibration
+  const handleAuthSuccess = (user: AuthUser) => {
+    setAuthenticatedUser(user);
+    setMode(user.role);
+    setPortalView(user.role === "admin" ? "erp" : "workspace");
+    if (user.role === "teacher") {
+      setPrimaryRole("teacher");
+    } else if (user.role === "student") {
       setPrimaryRole("student");
     }
 
@@ -646,6 +699,16 @@ export default function Home() {
         />
       )}
 
+      {/* ─── SCREEN 2.5: AUTHENTICATION (LOGIN & SIGN UP) ─── */}
+      {currentScreen === "auth" && (
+        <AuthScreen
+          initialRole={mode}
+          onAuthSuccess={handleAuthSuccess}
+          onBackToRoles={() => setCurrentScreen("role_selection")}
+          onExitHome={() => setCurrentScreen("welcome")}
+        />
+      )}
+
       {/* ─── SCREEN 3: GUIDED ONBOARDING STEPPER (CALIBRATION & ENVIRONMENT) ─── */}
       {currentScreen === "onboarding" && (
         <OnboardingStepper
@@ -793,6 +856,13 @@ export default function Home() {
                     activeSubject={activeSubject}
                     onSelectSubject={handleSelectSubject}
                     onEnterWorkspace={() => setStudentInHub(false)}
+                    onImportPackage={(newSubject) => {
+                      setSubjectsList((prev) => {
+                        if (prev.some((s) => s.name === newSubject.name)) return prev;
+                        return [newSubject, ...prev];
+                      });
+                      handleSelectSubject(newSubject.name);
+                    }}
                   />
                 ) : (
                   <StudentWorkspace
@@ -854,8 +924,8 @@ export default function Home() {
                           name: newSubj.name,
                           code: newSubj.code,
                           units: newSubj.units,
-                          docs: 1,
-                          chunks: 12,
+                          docs: 0,
+                          chunks: 0,
                           rssh: `${newSubj.name.replace(/\s+/g, "-")}-2026.rssh`
                         }
                       ]);

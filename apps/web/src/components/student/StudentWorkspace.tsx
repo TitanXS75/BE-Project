@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Sparkles,
   FileQuestion,
@@ -9,11 +9,16 @@ import {
   Send,
   Check,
   Copy,
-  CheckCircle
+  CheckCircle,
+  CalendarCheck,
+  Clock,
+  Calendar,
+  BookOpen,
+  RotateCcw
 } from "lucide-react";
-import { CloudAiConfig } from "@/lib/api";
+import { CloudAiConfig, generateStudyPlan } from "@/lib/api";
 
-export type StudentTab = "chat" | "quizzes" | "flashcards" | "teachback" | "pyq";
+export type StudentTab = "chat" | "quizzes" | "flashcards" | "teachback" | "pyq" | "study_plan";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -238,6 +243,83 @@ export function StudentWorkspace({
   cloudConfig,
   onOpenAIModelModal
 }: StudentWorkspaceProps) {
+  // SRS Spaced Repetition Stats
+  const [, setSrsStats] = useState({ hard: 0, good: 0, easy: 0 });
+  const [srsToast, setSrsToast] = useState<string | null>(null);
+
+  const handleSrsRating = (difficulty: "hard" | "good" | "easy") => {
+    setSrsStats((prev) => ({ ...prev, [difficulty]: prev[difficulty] + 1 }));
+    const intervals = { hard: "1 day", good: "3 days", easy: "7 days" };
+    setSrsToast(`Retention scheduled for review in ${intervals[difficulty]}`);
+    setTimeout(() => setSrsToast(null), 2500);
+
+    setIsFlipped(false);
+    setCardIndex((prev) => (prev < flashcards.length - 1 ? prev + 1 : 0));
+  };
+
+  // Adaptive Study Plan State
+  const [daysRemaining, setDaysRemaining] = useState(14);
+  const [dailyHours, setDailyHours] = useState(2.0);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [completedDays, setCompletedDays] = useState<Record<number, boolean>>({});
+  const [studyPlanSchedule, setStudyPlanSchedule] = useState<Array<{ day: number; focus: string; practice: string }>>([
+    { day: 1, focus: `${activeUnit}: Core Foundations & Mathematical Proofs`, practice: "5 Short Practice Questions" },
+    { day: 2, focus: `${activeUnit}: Parameter Convergence & Optimality`, practice: "1 Derivation Problem" },
+    { day: 3, focus: "Regularization Techniques & Sparsity Constraints", practice: "Feynman Teach-Back Drill" },
+    { day: 4, focus: "Cross-Validation & Hyperparameter Tuning", practice: "Adaptive Quiz Assessment" },
+    { day: 5, focus: "Bias-Variance Decomposition & Generalization Limits", practice: "PYQ 2024 Exam Review" },
+    { day: 6, focus: "Ensemble Methods & Algorithmic Complexity", practice: "Spaced Repetition Flashcards" },
+    { day: 7, focus: "Mid-Term Diagnostic Mock Examination", practice: "Full 50-Mark Assessment" },
+    { day: 8, focus: "High-Yield Derivations & Model Robustness", practice: "Speed Derivation Session" },
+    { day: 9, focus: "Unsupervised Clustering & Convergence Theorems", practice: "Quiz Assessment 2" },
+    { day: 10, focus: "Five-Year PYQ High-Frequency Recurring Themes", practice: "Section C Exam Focus" },
+    { day: 11, focus: "Formula Consolidation & Theorem Sheets", practice: "Deck Mastery Review" },
+    { day: 12, focus: "Full University Mock Examination", practice: "Timed 3-Hour Simulation" },
+    { day: 13, focus: "Targeted Weak Area Remediation", practice: "Diagnostic Teach-Back" },
+    { day: 14, focus: "Final Syllabus Summary & High-Yield Blueprint", practice: "Final Confidence Review" },
+  ]);
+
+  const handleFetchStudyPlan = async () => {
+    setGeneratingPlan(true);
+    try {
+      const res = await generateStudyPlan({
+        days_remaining: daysRemaining,
+        daily_hours: dailyHours
+      });
+      if (res && res.schedule && res.schedule.length > 0) {
+        setStudyPlanSchedule(res.schedule);
+      }
+    } catch {
+      // Offline fallback
+      const newSched: Array<{ day: number; focus: string; practice: string }> = [];
+      for (let d = 1; d <= daysRemaining; d++) {
+        if (d === 1) {
+          newSched.push({ day: d, focus: `${activeUnit}: Core Foundations & Proofs`, practice: "5 Short Practice Questions" });
+        } else if (d === daysRemaining) {
+          newSched.push({ day: d, focus: "Final Comprehensive Revision & High-Yield Blueprint", practice: "Final Confidence Drill" });
+        } else if (d % 7 === 0) {
+          newSched.push({ day: d, focus: `Comprehensive Milestone Diagnostic Test (Day ${d})`, practice: "Timed Mock Examination" });
+        } else if (d % 3 === 0) {
+          newSched.push({ day: d, focus: "PYQ Examination Questions & High-Probability Solutions", practice: "Speed Answering Drill" });
+        } else if (d % 2 === 0) {
+          newSched.push({ day: d, focus: "Algorithmic Formulations & Problem Solving", practice: "Adaptive Quiz Assessment" });
+        } else {
+          newSched.push({ day: d, focus: "Theoretical Rigor & Concept Clarification", practice: "Feynman Teach-Back Drill" });
+        }
+      }
+      setStudyPlanSchedule(newSched);
+    } finally {
+      setGeneratingPlan(false);
+    }
+  };
+
+  const toggleDayCompletion = (dayNum: number) => {
+    setCompletedDays((prev) => ({
+      ...prev,
+      [dayNum]: !prev[dayNum]
+    }));
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* ─── TAB 1: AI TUTOR CHAT (EXTREME LEFT AND RIGHT) ─── */}
@@ -494,26 +576,74 @@ export function StudentWorkspace({
                 <span className="text-xs text-[#86868b]">Click to flip card</span>
               </div>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => {
-                    setIsFlipped(false);
-                    setCardIndex((prev) => (prev > 0 ? prev - 1 : flashcards.length - 1));
-                  }}
-                  className="px-6 py-2.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => {
-                    setIsFlipped(false);
-                    setCardIndex((prev) => (prev < flashcards.length - 1 ? prev + 1 : 0));
-                  }}
-                  className="px-6 py-2.5 rounded-xl btn-apple-primary text-xs font-medium cursor-pointer"
-                >
-                  Next Card
-                </button>
-              </div>
+              {/* Spaced Repetition (SRS) Review Rating Buttons */}
+              {isFlipped ? (
+                <div className="flex flex-col items-center gap-3 w-full animate-in fade-in duration-150">
+                  <span className="text-xs text-[#86868b] font-medium">
+                    Rate Retention Difficulty (Spaced Repetition Review)
+                  </span>
+                  <div className="grid grid-cols-3 gap-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => handleSrsRating("hard")}
+                      className="p-3.5 rounded-2xl bg-[#ff453a]/10 border border-[#ff453a]/30 hover:bg-[#ff453a]/20 text-[#ff453a] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
+                    >
+                      <span className="font-bold">Hard</span>
+                      <span className="text-[11px] opacity-80 font-normal">Review in 1 Day</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSrsRating("good")}
+                      className="p-3.5 rounded-2xl bg-[#0071e3]/10 border border-[#0071e3]/30 hover:bg-[#0071e3]/20 text-[#0071e3] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
+                    >
+                      <span className="font-bold">Good</span>
+                      <span className="text-[11px] opacity-80 font-normal">Review in 3 Days</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSrsRating("easy")}
+                      className="p-3.5 rounded-2xl bg-[#30d158]/10 border border-[#30d158]/30 hover:bg-[#30d158]/20 text-[#30d158] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
+                    >
+                      <span className="font-bold">Easy</span>
+                      <span className="text-[11px] opacity-80 font-normal">Review in 7 Days</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCardIndex((prev) => (prev > 0 ? prev - 1 : flashcards.length - 1));
+                    }}
+                    className="px-6 py-2.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setIsFlipped(true)}
+                    className="px-6 py-2.5 rounded-xl btn-apple-primary text-xs font-medium cursor-pointer"
+                  >
+                    Reveal Definition
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCardIndex((prev) => (prev < flashcards.length - 1 ? prev + 1 : 0));
+                    }}
+                    className="px-6 py-2.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
+                  >
+                    Next Card
+                  </button>
+                </div>
+              )}
+
+              {srsToast && (
+                <div className="px-4 py-2 rounded-xl bg-black border border-[#30d158]/40 text-[#30d158] text-xs font-mono animate-in fade-in flex items-center gap-2">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span>{srsToast}</span>
+                </div>
+              )}
             </>
           ) : (
             <div className="p-8 rounded-3xl bg-[#161618] border border-white/10 text-center flex flex-col items-center gap-3">
@@ -635,6 +765,161 @@ export function StudentWorkspace({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB 6: ADAPTIVE STUDY PLANNER ─── */}
+      {activeTab === "study_plan" && (
+        <div className="max-w-4xl mx-auto flex flex-col gap-6 animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <CalendarCheck className="h-5 w-5 text-[#38bdf8]" />
+                Adaptive Revision Timetable &amp; Syllabus Study Planner
+              </h3>
+              <p className="text-sm text-[#86868b] mt-1">
+                Dynamic milestone roadmap tailored to your examination date and daily preparation hours.
+              </p>
+            </div>
+          </div>
+
+          {/* Configuration Controls */}
+          <div className="p-6 rounded-3xl bg-[#161618] border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-xl">
+            <div className="flex flex-wrap items-center gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+                  Days Remaining
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={3}
+                    max={90}
+                    value={daysRemaining}
+                    onChange={(e) => setDaysRemaining(Math.max(3, parseInt(e.target.value) || 14))}
+                    className="w-24 px-3.5 py-2 rounded-xl bg-black border border-white/10 text-white font-mono text-sm outline-none focus:border-[#0071e3]"
+                  />
+                  <span className="text-xs text-[#86868b]">Days to Exam</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[#86868b] uppercase tracking-wider">
+                  Daily Study Hours
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step={0.5}
+                    min={0.5}
+                    max={12}
+                    value={dailyHours}
+                    onChange={(e) => setDailyHours(Math.max(0.5, parseFloat(e.target.value) || 2.0))}
+                    className="w-24 px-3.5 py-2 rounded-xl bg-black border border-white/10 text-white font-mono text-sm outline-none focus:border-[#0071e3]"
+                  />
+                  <span className="text-xs text-[#86868b]">Hours / Day</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleFetchStudyPlan}
+              disabled={generatingPlan}
+              className="px-6 py-2.5 rounded-2xl btn-apple-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-40 self-end md:self-auto"
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${generatingPlan ? "animate-spin" : ""}`} />
+              <span>{generatingPlan ? "Synthesizing Schedule..." : "Recalculate Timetable"}</span>
+            </button>
+          </div>
+
+          {/* Metrics Ribbon */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/[0.08] flex flex-col gap-1">
+              <span className="text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">Total Days</span>
+              <span className="text-xl font-bold text-white font-mono">{daysRemaining} Days</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/[0.08] flex flex-col gap-1">
+              <span className="text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">Daily Commitment</span>
+              <span className="text-xl font-bold text-[#0071e3] font-mono">{dailyHours}h</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/[0.08] flex flex-col gap-1">
+              <span className="text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">Total Effort</span>
+              <span className="text-xl font-bold text-[#ff9f0a] font-mono">{(daysRemaining * dailyHours).toFixed(1)}h</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/[0.08] flex flex-col gap-1">
+              <span className="text-[11px] text-[#86868b] uppercase tracking-wider font-semibold">Progress</span>
+              <span className="text-xl font-bold text-[#30d158] font-mono">
+                {Object.values(completedDays).filter(Boolean).length} / {studyPlanSchedule.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/10 p-0.5">
+            <div
+              className="bg-gradient-to-r from-[#0071e3] via-[#38bdf8] to-[#30d158] h-full rounded-full transition-all duration-300 ease-out"
+              style={{
+                width: `${studyPlanSchedule.length > 0 ? (Object.values(completedDays).filter(Boolean).length / studyPlanSchedule.length) * 100 : 0}%`
+              }}
+            />
+          </div>
+
+          {/* Schedule Timeline */}
+          <div className="flex flex-col gap-3">
+            {studyPlanSchedule.map((item) => {
+              const isDone = !!completedDays[item.day];
+              return (
+                <div
+                  key={item.day}
+                  onClick={() => toggleDayCompletion(item.day)}
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
+                    isDone
+                      ? "bg-[#1c1c1e]/60 border-[#30d158]/30 text-[#86868b]"
+                      : "bg-[#161618] border-white/10 hover:border-white/20 text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <button
+                      type="button"
+                      aria-label={`Mark Day ${item.day} as completed`}
+                      className={`h-6 w-6 rounded-lg border flex items-center justify-center transition-all ${
+                        isDone
+                          ? "bg-[#30d158] border-[#30d158] text-black"
+                          : "border-white/20 bg-black/40 text-transparent hover:border-white/40"
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                    </button>
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                          isDone ? "bg-white/5 text-[#86868b]" : "bg-[#0071e3]/15 text-[#0071e3]"
+                        }`}>
+                          Day {item.day}
+                        </span>
+                        <span className={`text-sm font-medium ${isDone ? "line-through text-[#86868b]" : "text-white"}`}>
+                          {item.focus}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <span className="text-xs px-2.5 py-1 rounded-lg bg-black border border-white/10 text-[#86868b] font-mono">
+                      {item.practice}
+                    </span>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                      isDone ? "bg-[#30d158]/10 text-[#30d158]" : "bg-white/5 text-[#86868b]"
+                    }`}>
+                      {isDone ? "Completed" : "Pending"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

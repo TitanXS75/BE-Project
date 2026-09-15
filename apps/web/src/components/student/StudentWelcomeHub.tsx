@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   GraduationCap,
   Layers,
@@ -9,10 +9,15 @@ import {
   Database,
   Cpu,
   CheckCircle2,
-  FolderOpen
+  FolderOpen,
+  Upload,
+  X,
+  AlertCircle,
+  FileArchive
 } from "lucide-react";
+import { importRSSHPackage } from "@/lib/api";
 
-interface SubjectItem {
+export interface SubjectItem {
   name: string;
   code: string;
   units: number;
@@ -26,18 +31,64 @@ interface StudentWelcomeHubProps {
   activeSubject: string;
   onSelectSubject: (subjectName: string) => void;
   onEnterWorkspace: () => void;
+  onImportPackage?: (newSubject: SubjectItem) => void;
 }
 
 export function StudentWelcomeHub({
   subjectsList,
   activeSubject,
   onSelectSubject,
-  onEnterWorkspace
+  onEnterWorkspace,
+  onImportPackage
 }: StudentWelcomeHubProps) {
   const [selected, setSelected] = useState(activeSubject);
   const [isMounting, setIsMounting] = useState(false);
   const [mountStep, setMountStep] = useState(0);
   const [mountProgress, setMountProgress] = useState(0);
+
+  // Import Modal State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleProcessFile = async (file: File) => {
+    if (!file.name.endsWith(".rssh") && !file.name.endsWith(".zip")) {
+      setImportError("Only .rssh or .zip packages are supported.");
+      return;
+    }
+    setIsImporting(true);
+    setImportError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await importRSSHPackage(formData);
+      const subjectName = res.subject?.subject_name || res.subject?.title || file.name.replace(/\.(rssh|zip)$/i, "");
+      const newSubject: SubjectItem = {
+        name: subjectName,
+        code: res.subject?.subject_code || `CS-${Math.floor(100 + Math.random() * 900)}`,
+        units: res.subject?.units?.length || 4,
+        docs: res.subject?.documents_count || 12,
+        chunks: res.subject?.chunks_count || 140,
+        rssh: file.name
+      };
+      if (onImportPackage) {
+        onImportPackage(newSubject);
+      }
+      setImportSuccess(`Package ${file.name} imported and verified successfully.`);
+      setTimeout(() => {
+        setShowImportModal(false);
+        setImportSuccess(null);
+        handleStartMounting(subjectName);
+      }, 1000);
+    } catch (err: any) {
+      setImportError(err?.message || "Failed to unpack and verify .rssh package.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const mountStages = [
     { label: `Reading package archive (${selected.replace(/\s+/g, "-")}-2026.rssh)...`, progress: 25 },
@@ -103,9 +154,18 @@ export function StudentWelcomeHub({
           <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">
             Choose Course Subject (.rssh)
           </span>
-          <span className="text-xs text-[#86868b]">
-            {subjectsList.length} Mounted Courses Available
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-white text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+            >
+              <Upload className="h-3.5 w-3.5 text-[#0071e3]" />
+              <span>Import .rssh Package</span>
+            </button>
+            <span className="text-xs text-[#86868b]">
+              {subjectsList.length} Mounted Courses Available
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -214,6 +274,102 @@ export function StudentWelcomeHub({
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+      {/* ─── IMPORT .RSSH PACKAGE MODAL ─── */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="w-full max-w-lg p-7 rounded-3xl bg-[#18181b] border border-white/20 shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 relative">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-[#0071e3]/15 border border-[#0071e3]/30 flex items-center justify-center text-[#0071e3]">
+                  <FileArchive className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Import Course Package</h3>
+                  <p className="text-xs text-[#86868b]">Upload an air-gapped .rssh or .zip syllabus package</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportError(null);
+                  setImportSuccess(null);
+                }}
+                className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 text-[#86868b] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Drag & Drop Zone */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  handleProcessFile(e.dataTransfer.files[0]);
+                }
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-8 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center text-center gap-3.5 cursor-pointer ${
+                isDragOver
+                  ? "border-[#0071e3] bg-[#0071e3]/10"
+                  : "border-white/15 hover:border-white/30 bg-black/30 hover:bg-black/40"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".rssh,.zip"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleProcessFile(e.target.files[0]);
+                  }
+                }}
+              />
+
+              <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#0071e3]">
+                <Upload className="h-6 w-6" />
+              </div>
+
+              <div>
+                <span className="text-sm font-semibold text-white block">
+                  Click to browse or drop package here
+                </span>
+                <span className="text-xs text-[#86868b] mt-0.5 block">
+                  Accepts .rssh or .zip (Relational Syllabus Subject Hub)
+                </span>
+              </div>
+            </div>
+
+            {isImporting && (
+              <div className="p-4 rounded-xl bg-black/40 border border-[#0071e3]/30 flex items-center gap-3 text-xs font-mono text-[#0071e3]">
+                <div className="h-4 w-4 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                <span>Unpacking SQLite schema &amp; mounting vector indices...</span>
+              </div>
+            )}
+
+            {importError && (
+              <div className="p-4 rounded-xl bg-[#ff453a]/10 border border-[#ff453a]/30 flex items-center gap-3 text-xs text-[#ff453a]">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {importSuccess && (
+              <div className="p-4 rounded-xl bg-[#30d158]/10 border border-[#30d158]/30 flex items-center gap-3 text-xs text-[#30d158] font-medium">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span>{importSuccess}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
