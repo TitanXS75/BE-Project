@@ -194,9 +194,8 @@ flowchart TD
    - Standardized `QuizGenerator.generate_quiz()` to return array `options: string[]`, `correct: int`, `taxonomy`, `difficulty`, `explanation`, and textbook citations (`source`, `page_reference`).
    - Updated `StudentWorkspace.tsx` with difficulty selectors (`Easy`, `Medium`, `Hard`), page citations, Bloom's cognitive taxonomy tags, and a "Submit Quiz for Evaluation" workflow.
    - Wired quiz grading to `POST /api/v1/student/quizzes/grade` with diagnostic grade report (`Mastery`, `Proficient`, `Needs Revision`) and logged attempts into SQLite `user_quiz_attempts` in `app.db`.
-2. **Flashcards Schema Alignment & Spaced Repetition (SRS)**: [DONE]
-   - Response handler accepts both `res.cards` and `res.flashcards`.
-   - Added persistent Spaced Repetition (SRS) difficulty ratings (`Hard`, `Good`, `Easy`) and SRS Mastery Summary Ribbon displaying Reviewed, Mastered, Retained, and Review Due counts.
+2. **Flashcards Deprecation & Removal**: [REMOVED]
+   - Completely removed the Syllabus Flashcards tab, SRS spaced repetition state, and mock deck generation from the Student Workspace and navigation sidebar per requirements. Streamlined revision workflow onto Adaptive Quizzes, Feynman Teach-Back, PYQ Predictor, and Study Planner.
 3. **PYQ Predictor Schema Alignment & Unit Distribution**: [DONE]
    - Mapped `high_probability_predictions` and `unit_distribution` returned from `GET /api/v1/teacher/pyq-trends/{subject_id}`.
    - Rendered unit-wise historical marks weightage cards with progress indicators and high-probability predicted exam question bank table.

@@ -23,6 +23,10 @@ This repository contains **Axiom**, a local-first, air-gapped curriculum-aware l
 - **Color System**: Curated dark palette (`#000000` deep background, `#0e0e10` / `#161618` card surfaces, `#1c1c1e` interactive layers, `#0071e3` Apple blue accent, `#30d158` success, `#ff9f0a` warning, `#38bdf8` info).
 - **Glassmorphism & Lighting**: Multi-layered ambient glows with high blur radius (`blur-[140px]`), subtle 1px border glows (`border-white/[0.08]` to `border-white/20`), and frosted backdrops (`backdrop-blur-xl`).
 - **Layout Expansion**: Use full-width responsive landing page layouts (`max-w-[1440px]`) with generous padding (`px-4 sm:px-10 lg:px-16`) rather than boxed, vertically compressed middle containers.
+- **Smooth Motion & Micro-Interactions**: Use Motion React (`motion.div`, `AnimatePresence`, `layoutId`) to provide fluid transitions between states, authentication modes (Sign In vs Sign Up), tabs, and dialogs. Avoid abrupt content snapping.
+
+### Execution & Tooling Constraints
+- **DO NOT run `npm run build` without explicit permission**: Do NOT trigger `npm run build` or full production packaging commands unless the user explicitly requests a production build. Rely on Vite HMR development server, fast linting, or IDE TypeScript typechecks.
 
 ---
 

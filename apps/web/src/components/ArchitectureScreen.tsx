@@ -420,7 +420,7 @@ export function ArchitectureScreen({ onBack, onStart }: ArchitectureScreenProps)
                   <span className="h-7 w-7 rounded-full bg-[#30d158]/20 text-[#30d158] font-bold flex items-center justify-center text-xs shrink-0">C</span>
                   <div>
                     <span className="font-semibold text-white block">Dynamic Study Modes</span>
-                    <span className="text-[11px] sm:text-xs text-[#86868b]">Socratic dialogues, auto-generated flashcards, and teach-back testing</span>
+                    <span className="text-[11px] sm:text-xs text-[#86868b]">Socratic dialogues, adaptive quizzes, and teach-back testing</span>
                   </div>
                 </div>
 
@@ -537,7 +537,7 @@ export function ArchitectureScreen({ onBack, onStart }: ArchitectureScreenProps)
                 <p className="text-white font-bold mb-2">-- SQLite curriculum relational tables</p>
                 <p className="text-[#38bdf8]">CREATE TABLE subjects (id TEXT PRIMARY KEY, name TEXT);</p>
                 <p className="text-[#38bdf8]">CREATE TABLE units (id TEXT, subject_id TEXT, title TEXT);</p>
-                <p className="text-[#38bdf8]">CREATE TABLE flashcards (id TEXT, unit_id TEXT, q TEXT, a TEXT);</p>
+                <p className="text-[#38bdf8]">CREATE TABLE pyq_questions (id TEXT, unit_id TEXT, question_text TEXT, marks INT);</p>
               </div>
             </div>
           </div>
