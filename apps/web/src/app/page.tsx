@@ -8,7 +8,7 @@ import { ModelRecommendationScreen } from "@/components/ModelRecommendationScree
 import { RoleSelectionScreen } from "@/components/RoleSelectionScreen";
 import { AuthScreen, AuthUser } from "@/components/AuthScreen";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
-import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
+import { WorkspaceHeader, UnitItem } from "@/components/workspace/WorkspaceHeader";
 import { StudentWorkspace, StudentTab } from "@/components/student/StudentWorkspace";
 import { TeacherWorkspace, TeacherTab } from "@/components/teacher/TeacherWorkspace";
 import { StudentWelcomeHub } from "@/components/student/StudentWelcomeHub";
@@ -23,12 +23,13 @@ import {
   fetchSystemDiagnostics,
   requestModelRecommendation,
   fetchActiveSubjects,
+  fetchCurriculum,
   generateAdaptiveQuiz,
-  generateFlashcardDeck,
   fetchPYQTrends,
   SystemDiagnostics,
   ModelRecommendation,
   CloudAiConfig,
+  UnitDistributionItem,
   API_BASE_URL
 } from "@/lib/api";
 
@@ -75,34 +76,6 @@ export default function Home() {
   });
   const [showAIModelModal, setShowAIModelModal] = useState(false);
 
-  // Dynamic Subject Data & Units
-  const SUBJECT_UNITS_MAP: Record<string, Array<{ title: string; topics: string; chunks: number }>> = {
-    "Machine Learning": [
-      { title: "Unit 1: Foundations & Mathematics", topics: "Linear Algebra, Probability, Calculus", chunks: 32 },
-      { title: "Unit 2: Linear Models & Regression", topics: "Least Squares, Ridge, Lasso, Logistic Regression", chunks: 41 },
-      { title: "Unit 3: Supervised & Unsupervised Learning", topics: "SVM, K-Means, Decision Trees, PCA", chunks: 48 },
-      { title: "Unit 4: Deep Neural Networks & Ensembles", topics: "Backpropagation, CNNs, Transformers, Bagging", chunks: 24 }
-    ],
-    "Cloud Computing & DevOps": [
-      { title: "Unit 1: Cloud Architectures & Virtualization", topics: "Hypervisors, IaaS, PaaS, SaaS primitives", chunks: 28 },
-      { title: "Unit 2: Containers & Kubernetes Orchestration", topics: "Docker, Pods, Services, Ingress, Helm", chunks: 36 },
-      { title: "Unit 3: Infrastructure as Code & Serverless", topics: "Terraform, CloudFormation, AWS Lambda", chunks: 30 },
-      { title: "Unit 4: CI/CD Pipelines & Site Reliability", topics: "GitHub Actions, Prometheus, Grafana, Tracing", chunks: 18 }
-    ],
-    "Distributed Systems": [
-      { title: "Unit 1: Distributed Architectures & RPC", topics: "gRPC, Message Brokers, Client-Server, P2P", chunks: 35 },
-      { title: "Unit 2: Synchronization & Logical Clocks", topics: "Lamport Timestamps, Vector Clocks, Mutex", chunks: 42 },
-      { title: "Unit 3: Consensus & Fault Tolerance", topics: "Raft, Paxos, 2PC/3PC, Byzantine Tolerance", chunks: 51 },
-      { title: "Unit 4: Distributed Storage & CAP Theorem", topics: "Consistent Hashing, DynamoDB, Cassandra", chunks: 40 }
-    ],
-    "Algorithms & Complexity": [
-      { title: "Unit 1: Asymptotic Analysis & Recurrences", topics: "Big-O, Master Theorem, Akra-Bazzi, Amortization", chunks: 38 },
-      { title: "Unit 2: Advanced Graph Algorithms", topics: "Dijkstra, Bellman-Ford, Tarjan SCC, Max Flow", chunks: 49 },
-      { title: "Unit 3: Dynamic Programming & Greedy Strategies", topics: "Matrix Chain, Knapsack, Huffman, Optimal BST", chunks: 54 },
-      { title: "Unit 4: NP-Completeness & Approximation", topics: "P vs NP, SAT, Vertex Cover Reduction, TSP", chunks: 69 }
-    ]
-  };
-
   const [subjectsList, setSubjectsList] = useState([
     { name: "Machine Learning", code: "CS-401", units: 4, docs: 12, chunks: 145, rssh: "ML-2026.rssh" },
     { name: "Cloud Computing & DevOps", code: "CS-402", units: 5, docs: 9, chunks: 112, rssh: "Cloud-2026.rssh" },
@@ -119,21 +92,89 @@ export default function Home() {
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [showRSSHModal, setShowRSSHModal] = useState(false);
 
-  const unitsList = SUBJECT_UNITS_MAP[activeSubject] || [
-    { title: "Unit 1: Foundations & Principles", topics: "Foundational concepts & syllabus overview", chunks: 20 },
-    { title: "Unit 2: Core Methodology", topics: "Theoretical formulations & methods", chunks: 25 },
-    { title: "Unit 3: Applied Systems", topics: "Practical implementations & proofs", chunks: 30 },
-    { title: "Unit 4: Advanced Architectures", topics: "State-of-the-art case studies", chunks: 24 }
-  ];
+  // Dynamic Curriculum Units (queried live from subject.db via /packages/{id}/curriculum)
+  const [curriculumUnits, setCurriculumUnits] = useState<UnitItem[]>([
+    { title: "Unit 1: Foundations & Mathematics", topics: "Linear Algebra, Multivariate Calculus, Probability", chunks: 32 },
+    { title: "Unit 2: Linear Models & Regression", topics: "Least Squares, Ridge, Lasso, Logistic Regression", chunks: 41 },
+    { title: "Unit 3: Supervised & Unsupervised Learning", topics: "Support Vector Machines, K-Means, Decision Trees, PCA", chunks: 48 },
+    { title: "Unit 4: Deep Neural Networks & Ensembles", topics: "Backpropagation, CNNs, Transformers, Bagging & Boosting", chunks: 24 }
+  ]);
+
+  const loadSubjectCurriculum = async (subjectName: string) => {
+    const slug = subjectName.toLowerCase().replace(/\s+/g, "-");
+    try {
+      const data = await fetchCurriculum(slug);
+      if (data && data.units && data.units.length > 0) {
+        const mappedUnits: UnitItem[] = data.units.map((u, i) => {
+          const topics = u.chapters && u.chapters.length > 0
+            ? u.chapters.map((c) => c.title).join(", ")
+            : u.description || "Core syllabus formulations & proofs";
+          const title = u.title.startsWith("Unit")
+            ? u.title
+            : `Unit ${u.unit_number || i + 1}: ${u.title}`;
+          return {
+            title,
+            topics,
+            chunks: u.chunks || 28
+          };
+        });
+        setCurriculumUnits(mappedUnits);
+        if (mappedUnits.length > 0) {
+          setActiveUnit(mappedUnits[0].title);
+        }
+      }
+    } catch {
+      // Offline fallback: synthesize structured units for the selected subject
+      setCurriculumUnits([
+        { title: `Unit 1: Foundations of ${subjectName}`, topics: "Core theoretical paradigms & definitions", chunks: 25 },
+        { title: "Unit 2: Analytical Methods & Models", topics: "Mathematical proofs & optimization bounds", chunks: 30 },
+        { title: "Unit 3: Applied Systems & Implementations", topics: "Empirical algorithms & evaluation", chunks: 28 },
+        { title: "Unit 4: Advanced Architectures & Case Studies", topics: "State-of-the-art developments & research", chunks: 22 }
+      ]);
+      setActiveUnit(`Unit 1: Foundations of ${subjectName}`);
+    }
+  };
 
   const handleSelectSubject = (subjectName: string) => {
     setActiveSubject(subjectName);
-    const subUnits = SUBJECT_UNITS_MAP[subjectName];
-    if (subUnits && subUnits.length > 0) {
-      setActiveUnit(subUnits[0].title);
-    } else {
-      setActiveUnit("Unit 1: Foundations & Principles");
-    }
+    loadSubjectCurriculum(subjectName);
+
+    const slug = subjectName.toLowerCase().replace(/\s+/g, "-");
+
+    // Fetch dynamic PYQ trends for new subject
+    fetchPYQTrends(slug)
+      .then((data) => {
+        if (data && data.high_probability_predictions && data.high_probability_predictions.length > 0) {
+          setPyqTopics(data.high_probability_predictions.map((p: any) => ({
+            topic: p.topic,
+            frequency: p.recurrence_history || `${p.unit || "Core"} Focus`,
+            weight: `${p.expected_marks || 10} Marks`,
+            probability: Math.round((p.probability_score ?? 0.8) * 100),
+            trend: (p.probability_score ?? 0) >= 0.85 ? "High Yield" : "Moderate"
+          })));
+        } else if (data && data.recurring_topics && data.recurring_topics.length > 0) {
+          setPyqTopics(data.recurring_topics);
+        }
+
+        if (data && data.unit_distribution && data.unit_distribution.length > 0) {
+          setUnitDistribution(data.unit_distribution);
+        }
+      })
+      .catch(() => {});
+
+    // Reset chat session with subject-specific welcome message
+    setMessages([
+      {
+        role: "assistant",
+        text: `Hello! I am your curriculum-grounded AI Tutor for **${subjectName}**.\n\nAll explanations are strictly bounded by your prescribed syllabus and mounted course package. What concept or problem would you like to explore?`,
+        sources: [
+          "Prescribed_Curriculum.pdf",
+          `${subjectName.replace(/\s+/g, "_")}_Textbook.pdf`,
+          `${slug}-2026.rssh`
+        ],
+        confidence: 99
+      }
+    ]);
   };
 
   // ─── CHAT STATE ───
@@ -156,56 +197,7 @@ export default function Home() {
     "Summarize the key exam review points from the prescribed textbook"
   ];
 
-  // ─── FLASHCARDS STATE (DYNAMIC) ───
-  const [flashcards, setFlashcards] = useState<Array<{ unit: string; front: string; back: string }>>([
-    {
-      unit: "Unit 1",
-      front: "What is L1 Regularization (Lasso) and how does it achieve sparsity?",
-      back: "L1 regularization adds an absolute weight penalty (λ * ∑|w|) to the loss function. The diamond-shaped constraint boundary has sharp corners along coordinate axes, forcing less significant coefficients strictly to zero."
-    },
-    {
-      unit: "Unit 1",
-      front: "Explain the Bias-Variance Tradeoff in statistical learning.",
-      back: "Total expected error = Bias² + Variance + Irreducible Noise. High bias leads to underfitting (oversimplified hypothesis), while high variance leads to overfitting (capturing dataset noise)."
-    }
-  ]);
-  const [cardIndex, setCardIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
 
-  const handleGenerateFlashcards = async () => {
-    setGeneratingFlashcards(true);
-    try {
-      const res = await generateFlashcardDeck({
-        subject_id: activeSubject.toLowerCase().replace(/\s+/g, "-"),
-        unit_id: activeUnit,
-        count: 4
-      });
-      const cards = res?.cards || res?.flashcards;
-      if (cards && cards.length > 0) {
-        setFlashcards(cards);
-        setCardIndex(0);
-        setIsFlipped(false);
-      }
-    } catch {
-      setFlashcards([
-        {
-          unit: activeUnit,
-          front: `What is the principal objective function for ${activeUnit}?`,
-          back: `To optimize parameter weights θ by minimizing expected empirical loss while regularizing model complexity.`
-        },
-        {
-          unit: activeUnit,
-          front: `How is generalization error quantified in ${activeSubject}?`,
-          back: `As the sum of squared bias, parameter variance, and irreducible system noise evaluated on a held-out test distribution.`
-        }
-      ]);
-      setCardIndex(0);
-      setIsFlipped(false);
-    } finally {
-      setGeneratingFlashcards(false);
-    }
-  };
 
   // ─── QUIZ STATE (DYNAMIC) ───
   const [quizDifficulty, setQuizDifficulty] = useState<"easy" | "medium" | "hard">("medium");
@@ -338,6 +330,12 @@ export default function Home() {
     { topic: "Support Vector Machines & Dual Form", frequency: "3 / 5 Years", weight: "12 Marks", probability: 82, trend: "Moderate" },
     { topic: "Dimensionality Reduction & Matrix Proof", frequency: "3 / 5 Years", weight: "10 Marks", probability: 79, trend: "Moderate" }
   ]);
+  const [unitDistribution, setUnitDistribution] = useState<UnitDistributionItem[]>([
+    { unit_number: 1, title: "Foundations & Linear Models", historical_marks_weightage_pct: 25.0, yield_level: "High", questions_count: 12 },
+    { unit_number: 2, title: "Regularization & Optimization", historical_marks_weightage_pct: 30.0, yield_level: "Critical", questions_count: 15 },
+    { unit_number: 3, title: "Supervised Learning Algorithms", historical_marks_weightage_pct: 25.0, yield_level: "High", questions_count: 11 },
+    { unit_number: 4, title: "Unsupervised & Clustering", historical_marks_weightage_pct: 20.0, yield_level: "Medium", questions_count: 7 }
+  ]);
 
   // ─── TEACHER MODE STATES ───
   const [bloomsTaxonomy, setBloomsTaxonomy] = useState({
@@ -402,8 +400,10 @@ export default function Home() {
     initCheck();
   }, []);
 
-  // Fetch PYQ trends when subject changes
+  // Fetch dynamic curriculum units and PYQ trends when subject changes
   useEffect(() => {
+    loadSubjectCurriculum(activeSubject);
+
     const slug = activeSubject.toLowerCase().replace(/\s+/g, "-");
     fetchPYQTrends(slug)
       .then((data) => {
@@ -417,6 +417,10 @@ export default function Home() {
           })));
         } else if (data && data.recurring_topics && data.recurring_topics.length > 0) {
           setPyqTopics(data.recurring_topics);
+        }
+
+        if (data && data.unit_distribution && data.unit_distribution.length > 0) {
+          setUnitDistribution(data.unit_distribution);
         }
       })
       .catch(() => {});
@@ -808,7 +812,7 @@ export default function Home() {
               activeSubject={activeSubject}
               activeUnit={activeUnit}
               setActiveUnit={setActiveUnit}
-              unitsList={unitsList}
+              unitsList={curriculumUnits}
               isUnitDropdownOpen={isUnitDropdownOpen}
               setIsUnitDropdownOpen={setIsUnitDropdownOpen}
               selectedModel={selectedModel}
@@ -886,13 +890,6 @@ export default function Home() {
                     }
                     onGenerateQuiz={handleGenerateQuiz}
                     generatingQuiz={generatingQuiz}
-                    flashcards={flashcards}
-                    cardIndex={cardIndex}
-                    setCardIndex={setCardIndex}
-                    isFlipped={isFlipped}
-                    setIsFlipped={setIsFlipped}
-                    onGenerateFlashcards={handleGenerateFlashcards}
-                    generatingFlashcards={generatingFlashcards}
                     teachBackConcept={teachBackConcept}
                     setTeachBackConcept={setTeachBackConcept}
                     teachBackInput={teachBackInput}
@@ -901,6 +898,8 @@ export default function Home() {
                     evaluatingTeachBack={evaluatingTeachBack}
                     onEvaluateTeachBack={handleEvaluateTeachBack}
                     pyqTopics={pyqTopics}
+                    unitDistribution={unitDistribution}
+                    subjectId={activeSubject.toLowerCase().replace(/\s+/g, "-")}
                     cloudConfig={cloudConfig}
                     onOpenAIModelModal={() => setShowAIModelModal(true)}
                   />
@@ -979,6 +978,13 @@ export default function Home() {
             subjectsList={subjectsList}
             activeSubject={activeSubject}
             onSelectSubject={(name) => handleSelectSubject(name)}
+            onImportPackage={(newSubject) => {
+              setSubjectsList((prev) => {
+                if (prev.some((s) => s.name === newSubject.name)) return prev;
+                return [newSubject, ...prev];
+              });
+              handleSelectSubject(newSubject.name);
+            }}
           />
 
           <SpecsModal

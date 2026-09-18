@@ -32,11 +32,11 @@ export function RoleSelectionScreen({
       accentColor: "#0071e3",
       image: "/assets/3d/role_student_3d.jpg",
       description:
-        "Syllabus-grounded learning with strict zero hallucinations, Feynman teach-back evaluations, spaced repetition flashcards, and exam trend analytics.",
+        "Syllabus-grounded learning with strict zero hallucinations, Feynman teach-back evaluations, adaptive practice quizzes, and exam trend analytics.",
       features: [
         "Curriculum AI Tutor with citation bounds",
         "Feynman teach-back intuition evaluation",
-        "Spaced repetition flashcards & practice quizzes",
+        "Adaptive practice quizzes with diagnostic grading",
         "5-Year Past Exam (PYQ) trend analytics",
       ],
       buttonText: "Continue as Student",

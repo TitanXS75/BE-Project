@@ -89,10 +89,36 @@ async def create_subject_workspace(payload: CreateSubjectRequest):
 async def get_curriculum(package_id: str):
     """Fetches the full curriculum hierarchy from subject.db."""
     subject_dir = settings.SUBJECTS_DIR / package_id
-    db_path = subject_dir / "subject.db"
+    if not subject_dir.exists():
+        # Check by slug or normalized name
+        for d in settings.SUBJECTS_DIR.iterdir():
+            if d.is_dir() and (
+                d.name.lower() == package_id.lower() or
+                d.name.lower().replace(" ", "-") == package_id.lower() or
+                d.name.lower().replace("-", " ") == package_id.lower()
+            ):
+                subject_dir = d
+                break
 
-    if not db_path.exists():
-        raise HTTPException(status_code=404, detail="Subject database not found.")
+    db_path = subject_dir / "subject.db" if subject_dir else None
+
+    # If missing, ensure default workspaces are seeded
+    if not db_path or not db_path.exists():
+        await ensure_default_subjects_seeded()
+        subject_dir = settings.SUBJECTS_DIR / package_id
+        if not subject_dir.exists():
+            for d in settings.SUBJECTS_DIR.iterdir():
+                if d.is_dir() and (
+                    d.name.lower() == package_id.lower() or
+                    d.name.lower().replace(" ", "-") == package_id.lower() or
+                    d.name.lower().replace("-", " ") == package_id.lower()
+                ):
+                    subject_dir = d
+                    break
+        db_path = subject_dir / "subject.db" if subject_dir else None
+
+    if not db_path or not db_path.exists():
+        raise HTTPException(status_code=404, detail=f"Subject database for '{package_id}' not found.")
 
     async with aiosqlite.connect(db_path) as db:
         db.row_factory = aiosqlite.Row
@@ -101,17 +127,33 @@ async def get_curriculum(package_id: str):
         chapters = await repo.list_chapters()
         documents = await repo.list_documents()
 
-    # Nest chapters under units
+        # Query chunk counts per unit if chunks table exists
+        chunk_counts: dict = {}
+        try:
+            async with db.execute("SELECT unit_id, COUNT(*) as c FROM chunks WHERE unit_id IS NOT NULL GROUP BY unit_id") as cursor:
+                rows = await cursor.fetchall()
+                for r in rows:
+                    chunk_counts[r["unit_id"]] = r["c"]
+        except Exception:
+            pass
+
+    # Nest chapters under units and include chunk count
     units_map = {}
     for u in units:
-        units_map[u["id"]] = {**u, "chapters": []}
+        uid = u["id"]
+        cnt = chunk_counts.get(uid, 28)
+        units_map[uid] = {
+            **u,
+            "chunks": cnt,
+            "chapters": []
+        }
 
     for ch in chapters:
         if ch["unit_id"] in units_map:
             units_map[ch["unit_id"]]["chapters"].append(ch)
 
     return {
-        "package_id": package_id,
+        "package_id": subject_dir.name,
         "units": list(units_map.values()),
         "documents": documents
     }

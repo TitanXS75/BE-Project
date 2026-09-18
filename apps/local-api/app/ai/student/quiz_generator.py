@@ -39,7 +39,9 @@ class QuizGenerator:
                 "difficulty": "easy",
                 "taxonomy": "Remember",
                 "explanation": "L1 (Lasso) regularization uses the L1 norm (∑|w|), which drives less important coefficients strictly to zero to induce feature sparsity.",
-                "page_reference": retrieved_chunks[0].get("page_number", 1) if retrieved_chunks else 1
+                "page_reference": retrieved_chunks[0].get("page_number", 1) if retrieved_chunks else 1,
+                "source": "Bishop Ch. 3.2 (Machine Learning Foundations)",
+                "unit": unit_id or "Unit 1"
             },
             {
                 "id": f"{quiz_id}_q2",
@@ -55,7 +57,9 @@ class QuizGenerator:
                 "difficulty": "medium",
                 "taxonomy": "Understand",
                 "explanation": "High variance means the model is overly sensitive to fluctuations in the training set, causing it to overfit rather than generalize to unseen test data.",
-                "page_reference": retrieved_chunks[0].get("page_number", 2) if retrieved_chunks else 2
+                "page_reference": retrieved_chunks[0].get("page_number", 2) if retrieved_chunks else 2,
+                "source": "Hastie et al., Elements of Statistical Learning, p. 219",
+                "unit": unit_id or "Unit 1"
             },
             {
                 "id": f"{quiz_id}_q3",
@@ -71,7 +75,9 @@ class QuizGenerator:
                 "difficulty": "hard",
                 "taxonomy": "Apply",
                 "explanation": "The Normal Equation requires computing the inverse of (X^T X). If features are linearly dependent (multicollinearity), the matrix is singular and cannot be inverted.",
-                "page_reference": 3
+                "page_reference": 3,
+                "source": "Strang, Linear Algebra & Learning from Data, Ch. 4",
+                "unit": unit_id or "Unit 1"
             },
             {
                 "id": f"{quiz_id}_q4",
@@ -87,7 +93,9 @@ class QuizGenerator:
                 "difficulty": "medium",
                 "taxonomy": "Analyze",
                 "explanation": "A higher λ penalizes complex weights more heavily, shrinking the hypothesis space, which lowers model variance but increases bias.",
-                "page_reference": 4
+                "page_reference": 4,
+                "source": "Goodfellow et al., Deep Learning, Ch. 5.2",
+                "unit": unit_id or "Unit 1"
             }
         ]
 

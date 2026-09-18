@@ -436,26 +436,6 @@ export function WorkspaceSidebar({
                 {!isCollapsed && <span>Adaptive Quizzes</span>}
               </button>
 
-              <button
-                onClick={() => setStudentTab("flashcards")}
-                title="Syllabus Flashcards"
-                className={`flex items-center rounded-2xl transition-all cursor-pointer ${
-                  isCollapsed
-                    ? `h-11 w-11 justify-center ${
-                        studentTab === "flashcards"
-                          ? "bg-[#1c1c1e] text-white shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                    : `w-full gap-3 px-3.5 py-2.5 text-xs font-medium ${
-                        studentTab === "flashcards"
-                          ? "bg-[#1c1c1e] text-white font-semibold shadow-sm border border-white/10"
-                          : "text-[#86868b] hover:bg-white/[0.04] hover:text-white"
-                      }`
-                }`}
-              >
-                <Layers className="h-4 w-4 text-[#ff9f0a] flex-shrink-0" />
-                {!isCollapsed && <span>Syllabus Flashcards</span>}
-              </button>
 
               <button
                 onClick={() => setStudentTab("teachback")}

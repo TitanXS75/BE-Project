@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   FileQuestion,
-  Layers,
   UserCheck,
   TrendingUp,
   Lightbulb,
@@ -10,15 +9,25 @@ import {
   Check,
   Copy,
   CheckCircle,
+  CheckCircle2,
   CalendarCheck,
   Clock,
   Calendar,
   BookOpen,
-  RotateCcw
+  RotateCcw,
+  Award,
+  AlertCircle,
+  Target
 } from "lucide-react";
-import { CloudAiConfig, generateStudyPlan } from "@/lib/api";
+import {
+  CloudAiConfig,
+  generateStudyPlan,
+  gradeQuizAttempt,
+  QuizGradeResult,
+  UnitDistributionItem
+} from "@/lib/api";
 
-export type StudentTab = "chat" | "quizzes" | "flashcards" | "teachback" | "pyq" | "study_plan";
+export type StudentTab = "chat" | "quizzes" | "teachback" | "pyq" | "study_plan";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -30,6 +39,7 @@ interface ChatMessage {
 interface StudentWorkspaceProps {
   activeTab: StudentTab;
   activeUnit: string;
+  subjectId?: string;
   selectedModel: string;
   messages: ChatMessage[];
   inputQuery: string;
@@ -48,15 +58,7 @@ interface StudentWorkspaceProps {
   onSelectAnswer: (qId: number, optionIdx: number) => void;
   onGenerateQuiz?: () => void;
   generatingQuiz?: boolean;
-
-  // Flashcards Props
-  flashcards: Array<{ unit: string; front: string; back: string }>;
-  cardIndex: number;
-  setCardIndex: React.Dispatch<React.SetStateAction<number>>;
-  isFlipped: boolean;
-  setIsFlipped: React.Dispatch<React.SetStateAction<boolean>>;
-  onGenerateFlashcards?: () => void;
-  generatingFlashcards?: boolean;
+  onGradeQuizAttempt?: (res: QuizGradeResult) => void;
 
   // Teach-back Props
   teachBackConcept: string;
@@ -69,6 +71,7 @@ interface StudentWorkspaceProps {
 
   // PYQ Props
   pyqTopics: any[];
+  unitDistribution?: UnitDistributionItem[];
 
   // Cloud AI settings
   cloudConfig: CloudAiConfig;
@@ -209,6 +212,7 @@ function formatInline(text: string): React.ReactNode {
 export function StudentWorkspace({
   activeTab,
   activeUnit,
+  subjectId,
   selectedModel,
   messages,
   inputQuery,
@@ -225,13 +229,7 @@ export function StudentWorkspace({
   onSelectAnswer,
   onGenerateQuiz,
   generatingQuiz,
-  flashcards,
-  cardIndex,
-  setCardIndex,
-  isFlipped,
-  setIsFlipped,
-  onGenerateFlashcards,
-  generatingFlashcards,
+  onGradeQuizAttempt,
   teachBackConcept,
   setTeachBackConcept,
   teachBackInput,
@@ -240,40 +238,97 @@ export function StudentWorkspace({
   evaluatingTeachBack,
   onEvaluateTeachBack,
   pyqTopics,
+  unitDistribution,
   cloudConfig,
   onOpenAIModelModal
 }: StudentWorkspaceProps) {
-  // SRS Spaced Repetition Stats
-  const [, setSrsStats] = useState({ hard: 0, good: 0, easy: 0 });
-  const [srsToast, setSrsToast] = useState<string | null>(null);
+  // ─── QUIZ GRADING & DIAGNOSTIC STATE ───
+  const [localGradeResult, setLocalGradeResult] = useState<QuizGradeResult | null>(null);
+  const [gradingAttempt, setGradingAttempt] = useState(false);
 
-  const handleSrsRating = (difficulty: "hard" | "good" | "easy") => {
-    setSrsStats((prev) => ({ ...prev, [difficulty]: prev[difficulty] + 1 }));
-    const intervals = { hard: "1 day", good: "3 days", easy: "7 days" };
-    setSrsToast(`Retention scheduled for review in ${intervals[difficulty]}`);
-    setTimeout(() => setSrsToast(null), 2500);
+  // Reset grade report when a new quiz is synthesized
+  useEffect(() => {
+    setLocalGradeResult(null);
+  }, [quizQuestions]);
 
-    setIsFlipped(false);
-    setCardIndex((prev) => (prev < flashcards.length - 1 ? prev + 1 : 0));
+  const handleGradeQuiz = async () => {
+    if (quizQuestions.length === 0) return;
+    setGradingAttempt(true);
+    try {
+      const res = await gradeQuizAttempt({
+        subject_id: subjectId || "general",
+        quiz_id: quizQuestions[0]?.id ? String(quizQuestions[0].id).split("_q")[0] : undefined,
+        questions: quizQuestions,
+        submitted_answers: selectedAnswers
+      });
+      setLocalGradeResult(res);
+      if (onGradeQuizAttempt) {
+        onGradeQuizAttempt(res);
+      }
+    } catch {
+      // Diagnostic local fallback
+      const total = quizQuestions.length;
+      let correct = 0;
+      const feedback = quizQuestions.map((q) => {
+        const userSel = selectedAnswers[q.id];
+        const isCorr = userSel === q.correct;
+        if (isCorr) correct++;
+        return {
+          question_id: String(q.id),
+          question: q.question,
+          user_answer: userSel !== undefined ? (q.options?.[userSel] || String(userSel)) : "Unanswered",
+          correct_answer: q.options?.[q.correct] || "Correct Solution",
+          is_correct: isCorr,
+          explanation: q.explanation || "",
+          page_reference: q.page_reference
+        };
+      });
+      const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+      const fallbackResult: QuizGradeResult = {
+        total_questions: total,
+        correct_answers: correct,
+        score_percentage: pct,
+        grade: pct >= 85 ? "Mastery" : pct >= 70 ? "Proficient" : "Needs Revision",
+        feedback
+      };
+      setLocalGradeResult(fallbackResult);
+      if (onGradeQuizAttempt) {
+        onGradeQuizAttempt(fallbackResult);
+      }
+    } finally {
+      setGradingAttempt(false);
+    }
   };
 
-  // Adaptive Study Plan State
+  const handleRetakeQuiz = () => {
+    setLocalGradeResult(null);
+  };
+
+  // ─── ADAPTIVE STUDY PLAN STATE (PERSISTENT) ───
   const [daysRemaining, setDaysRemaining] = useState(14);
   const [dailyHours, setDailyHours] = useState(2.0);
   const [generatingPlan, setGeneratingPlan] = useState(false);
-  const [completedDays, setCompletedDays] = useState<Record<number, boolean>>({});
+  const [completedDays, setCompletedDays] = useState<Record<number, boolean>>(() => {
+    try {
+      const storageKey = `axiom_study_completed_${subjectId || "sub"}`;
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [studyPlanSchedule, setStudyPlanSchedule] = useState<Array<{ day: number; focus: string; practice: string }>>([
     { day: 1, focus: `${activeUnit}: Core Foundations & Mathematical Proofs`, practice: "5 Short Practice Questions" },
     { day: 2, focus: `${activeUnit}: Parameter Convergence & Optimality`, practice: "1 Derivation Problem" },
     { day: 3, focus: "Regularization Techniques & Sparsity Constraints", practice: "Feynman Teach-Back Drill" },
     { day: 4, focus: "Cross-Validation & Hyperparameter Tuning", practice: "Adaptive Quiz Assessment" },
     { day: 5, focus: "Bias-Variance Decomposition & Generalization Limits", practice: "PYQ 2024 Exam Review" },
-    { day: 6, focus: "Ensemble Methods & Algorithmic Complexity", practice: "Spaced Repetition Flashcards" },
+    { day: 6, focus: "Ensemble Methods & Algorithmic Complexity", practice: "Self-Assessment Practice & Problem Solving" },
     { day: 7, focus: "Mid-Term Diagnostic Mock Examination", practice: "Full 50-Mark Assessment" },
     { day: 8, focus: "High-Yield Derivations & Model Robustness", practice: "Speed Derivation Session" },
     { day: 9, focus: "Unsupervised Clustering & Convergence Theorems", practice: "Quiz Assessment 2" },
     { day: 10, focus: "Five-Year PYQ High-Frequency Recurring Themes", practice: "Section C Exam Focus" },
-    { day: 11, focus: "Formula Consolidation & Theorem Sheets", practice: "Deck Mastery Review" },
+    { day: 11, focus: "Formula Consolidation & Theorem Sheets", practice: "Analytical Proofs Review" },
     { day: 12, focus: "Full University Mock Examination", practice: "Timed 3-Hour Simulation" },
     { day: 13, focus: "Targeted Weak Area Remediation", practice: "Diagnostic Teach-Back" },
     { day: 14, focus: "Final Syllabus Summary & High-Yield Blueprint", practice: "Final Confidence Review" },
@@ -314,10 +369,17 @@ export function StudentWorkspace({
   };
 
   const toggleDayCompletion = (dayNum: number) => {
-    setCompletedDays((prev) => ({
-      ...prev,
-      [dayNum]: !prev[dayNum]
-    }));
+    setCompletedDays((prev) => {
+      const next = {
+        ...prev,
+        [dayNum]: !prev[dayNum]
+      };
+      try {
+        const storageKey = `axiom_study_completed_${subjectId || "sub"}`;
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
   return (
@@ -426,7 +488,7 @@ export function StudentWorkspace({
       {/* ─── TAB 2: ADAPTIVE PRACTICE QUIZZES ─── */}
       {activeTab === "quizzes" && (
         <div className="max-w-3xl mx-auto flex flex-col gap-8">
-          <div className="flex items-center justify-between p-6 rounded-3xl bg-[#161618] border border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-[#161618] border border-white/10 shadow-xl">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-2.5">
                 <FileQuestion className="h-5 w-5 text-[#30d158]" />
@@ -436,18 +498,107 @@ export function StudentWorkspace({
                 Questions synthesized from active course package (.rssh) with verified rationale.
               </p>
             </div>
-            {onGenerateQuiz && (
-              <button
-                type="button"
-                onClick={onGenerateQuiz}
-                disabled={generatingQuiz}
-                className="px-4 py-2 rounded-xl btn-apple-primary text-xs font-medium flex items-center gap-2 cursor-pointer disabled:opacity-40"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                {generatingQuiz ? "Generating..." : "Generate New Quiz"}
-              </button>
-            )}
+            
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Difficulty Selector Pills */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-black/60 border border-white/10">
+                {(["easy", "medium", "hard"] as const).map((diff) => (
+                  <button
+                    key={diff}
+                    type="button"
+                    onClick={() => setQuizDifficulty?.(diff)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all cursor-pointer ${
+                      quizDifficulty === diff
+                        ? "bg-[#0071e3] text-white font-semibold shadow-sm"
+                        : "text-[#86868b] hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {diff}
+                  </button>
+                ))}
+              </div>
+
+              {onGenerateQuiz && (
+                <button
+                  type="button"
+                  onClick={onGenerateQuiz}
+                  disabled={generatingQuiz}
+                  className="px-4 py-2 rounded-xl btn-apple-primary text-xs font-medium flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {generatingQuiz ? "Generating..." : "Generate New Quiz"}
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* DIAGNOSTIC GRADE REPORT BANNER (WHEN GRADED) */}
+          {localGradeResult && (
+            <div className="p-8 rounded-3xl bg-[#161618] border border-white/15 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
+                <div className="flex items-center gap-4">
+                  <div className={`h-14 w-14 rounded-2xl flex items-center justify-center border shadow-lg ${
+                    localGradeResult.grade === "Mastery"
+                      ? "bg-[#30d158]/15 border-[#30d158]/30 text-[#30d158]"
+                      : localGradeResult.grade === "Proficient"
+                      ? "bg-[#0071e3]/15 border-[#0071e3]/30 text-[#0071e3]"
+                      : "bg-[#ff9f0a]/15 border-[#ff9f0a]/30 text-[#ff9f0a]"
+                  }`}>
+                    <Award className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <h4 className="text-xl font-bold text-white tracking-tight">
+                        Diagnostic Evaluation Complete
+                      </h4>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        localGradeResult.grade === "Mastery"
+                          ? "bg-[#30d158]/20 text-[#30d158]"
+                          : localGradeResult.grade === "Proficient"
+                          ? "bg-[#0071e3]/20 text-[#0071e3]"
+                          : "bg-[#ff9f0a]/20 text-[#ff9f0a]"
+                      }`}>
+                        {localGradeResult.grade}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#86868b] mt-1">
+                      Recorded in local learning history • {localGradeResult.correct_answers} of {localGradeResult.total_questions} Questions Solved Correctly
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-baseline gap-2 self-start sm:self-auto">
+                  <span className="text-4xl font-extrabold text-white font-mono">
+                    {localGradeResult.score_percentage}%
+                  </span>
+                  <span className="text-xs text-[#86868b] uppercase font-semibold">Score</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={handleRetakeQuiz}
+                  className="px-4 py-2 rounded-xl btn-apple-secondary text-xs font-medium flex items-center gap-2 cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Review &amp; Retake</span>
+                </button>
+                {onGenerateQuiz && (
+                  <button
+                    type="button"
+                    onClick={onGenerateQuiz}
+                    disabled={generatingQuiz}
+                    className="px-4 py-2 rounded-xl btn-apple-primary text-xs font-medium flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Synthesize Fresh Quiz</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {quizQuestions.length === 0 ? (
             <div className="p-12 rounded-3xl bg-[#161618] border border-white/10 flex flex-col items-center justify-center text-center gap-4">
@@ -470,189 +621,109 @@ export function StudentWorkspace({
               )}
             </div>
           ) : (
-            quizQuestions.map((q, idx) => {
-              const isAnswered = selectedAnswers[q.id] !== undefined;
-              const isCorrect = selectedAnswers[q.id] === q.correct;
-
-              return (
-                <div
-                  key={q.id || idx}
-                  className="p-8 rounded-3xl bg-[#161618] border border-white/10 flex flex-col gap-5"
-                >
-                  <div className="flex items-center justify-between text-xs text-[#86868b]">
-                    <span>Question {idx + 1} of {quizQuestions.length} • {q.unit || activeUnit}</span>
-                    <span className="text-[#30d158] font-mono">Curriculum Aligned</span>
-                  </div>
-
-                  <h4 className="text-base font-medium text-white leading-relaxed">
-                    {q.question}
-                  </h4>
-
-                  <div className="flex flex-col gap-2.5">
-                    {q.options?.map((opt: string, optIdx: number) => {
-                      const isThisSelected = selectedAnswers[q.id] === optIdx;
-                      let style = "bg-[#1c1c1e] border-white/10 text-[#a1a1a6] hover:text-white";
-
-                      if (isAnswered) {
-                        if (optIdx === q.correct) {
-                          style = "bg-[#1c1c1e] border-[#30d158] text-[#30d158] font-medium";
-                        } else if (isThisSelected && !isCorrect) {
-                          style = "bg-[#1c1c1e] border-[#ff453a] text-[#ff453a] font-medium";
-                        }
-                      }
-
-                      return (
-                        <button
-                          key={optIdx}
-                          disabled={isAnswered}
-                          onClick={() => onSelectAnswer(q.id, optIdx)}
-                          className={`w-full text-left p-4 rounded-2xl border text-sm flex items-center justify-between transition-all cursor-pointer ${style}`}
-                        >
-                          <span>{opt}</span>
-                          {isAnswered && optIdx === q.correct && (
-                            <CheckCircle className="h-5 w-5 text-[#30d158]" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {isAnswered && (
-                    <div className="p-5 rounded-2xl bg-black border border-white/10 text-sm flex flex-col gap-2">
-                      <span className={isCorrect ? "text-[#30d158] font-semibold" : "text-[#ff453a] font-semibold"}>
-                        {isCorrect ? "Correct Solution" : "Explanation & Rationale"}
-                      </span>
-                      <p className="text-[#a1a1a6] leading-relaxed">{q.explanation}</p>
-                      {q.source && <span className="text-xs text-[#86868b]">{q.source}</span>}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {/* ─── TAB 3: SYLLABUS FLASHCARDS ─── */}
-      {activeTab === "flashcards" && (
-        <div className="max-w-xl mx-auto flex flex-col items-center justify-center h-full gap-8">
-          <div className="text-center flex flex-col items-center gap-2">
-            <h3 className="text-base font-semibold text-white">
-              Curriculum Spaced Repetition
-            </h3>
-            {flashcards.length > 0 ? (
-              <p className="text-sm text-[#86868b]">
-                Card {cardIndex + 1} of {flashcards.length} • {flashcards[cardIndex]?.unit || activeUnit}
-              </p>
-            ) : (
-              <p className="text-sm text-[#86868b]">
-                No flashcards loaded for {activeUnit}
-              </p>
-            )}
-            {onGenerateFlashcards && (
-              <button
-                type="button"
-                onClick={onGenerateFlashcards}
-                disabled={generatingFlashcards}
-                className="mt-1 px-3 py-1.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
-              >
-                {generatingFlashcards ? "Generating Deck..." : "Generate New Flashcards Deck"}
-              </button>
-            )}
-          </div>
-
-          {flashcards.length > 0 ? (
             <>
-              <div
-                onClick={() => setIsFlipped(!isFlipped)}
-                className="w-full h-80 rounded-3xl bg-[#161618] border border-white/10 p-8 flex flex-col justify-between items-center text-center cursor-pointer select-none hover:border-[#0071e3]/40 transition-all shadow-xl"
-              >
-                <span className="text-xs uppercase font-semibold tracking-wider text-[#86868b]">
-                  {isFlipped ? "Ground Truth Definition" : "Prompt Question"}
-                </span>
-                <p className="text-base font-medium leading-relaxed text-white px-4">
-                  {isFlipped ? flashcards[cardIndex]?.back : flashcards[cardIndex]?.front}
-                </p>
-                <span className="text-xs text-[#86868b]">Click to flip card</span>
-              </div>
+              {quizQuestions.map((q, idx) => {
+                const isAnswered = selectedAnswers[q.id] !== undefined;
+                const isCorrect = selectedAnswers[q.id] === q.correct;
 
-              {/* Spaced Repetition (SRS) Review Rating Buttons */}
-              {isFlipped ? (
-                <div className="flex flex-col items-center gap-3 w-full animate-in fade-in duration-150">
-                  <span className="text-xs text-[#86868b] font-medium">
-                    Rate Retention Difficulty (Spaced Repetition Review)
-                  </span>
-                  <div className="grid grid-cols-3 gap-3 w-full">
-                    <button
-                      type="button"
-                      onClick={() => handleSrsRating("hard")}
-                      className="p-3.5 rounded-2xl bg-[#ff453a]/10 border border-[#ff453a]/30 hover:bg-[#ff453a]/20 text-[#ff453a] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
-                    >
-                      <span className="font-bold">Hard</span>
-                      <span className="text-[11px] opacity-80 font-normal">Review in 1 Day</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSrsRating("good")}
-                      className="p-3.5 rounded-2xl bg-[#0071e3]/10 border border-[#0071e3]/30 hover:bg-[#0071e3]/20 text-[#0071e3] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
-                    >
-                      <span className="font-bold">Good</span>
-                      <span className="text-[11px] opacity-80 font-normal">Review in 3 Days</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSrsRating("easy")}
-                      className="p-3.5 rounded-2xl bg-[#30d158]/10 border border-[#30d158]/30 hover:bg-[#30d158]/20 text-[#30d158] text-xs font-semibold flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-[1.02]"
-                    >
-                      <span className="font-bold">Easy</span>
-                      <span className="text-[11px] opacity-80 font-normal">Review in 7 Days</span>
-                    </button>
+                return (
+                  <div
+                    key={q.id || idx}
+                    className="p-8 rounded-3xl bg-[#161618] border border-white/10 flex flex-col gap-5 shadow-lg"
+                  >
+                    <div className="flex items-center justify-between text-xs text-[#86868b]">
+                      <div className="flex items-center gap-2">
+                        <span>Question {idx + 1} of {quizQuestions.length} • {q.unit || activeUnit}</span>
+                        {q.taxonomy && (
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[#0071e3] font-medium text-[11px]">
+                            {q.taxonomy}
+                          </span>
+                        )}
+                        {q.difficulty && (
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[#86868b] capitalize text-[11px]">
+                            {q.difficulty}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[#30d158] font-mono text-[11px]">Curriculum Grounded</span>
+                    </div>
+
+                    <h4 className="text-base font-medium text-white leading-relaxed">
+                      {q.question}
+                    </h4>
+
+                    <div className="flex flex-col gap-2.5">
+                      {q.options?.map((opt: string, optIdx: number) => {
+                        const isThisSelected = selectedAnswers[q.id] === optIdx;
+                        let style = "bg-[#1c1c1e] border-white/10 text-[#a1a1a6] hover:text-white";
+
+                        if (isAnswered) {
+                          if (optIdx === q.correct) {
+                            style = "bg-[#1c1c1e] border-[#30d158] text-[#30d158] font-medium";
+                          } else if (isThisSelected && !isCorrect) {
+                            style = "bg-[#1c1c1e] border-[#ff453a] text-[#ff453a] font-medium";
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={optIdx}
+                            disabled={isAnswered && localGradeResult !== null}
+                            onClick={() => onSelectAnswer(q.id, optIdx)}
+                            className={`w-full text-left p-4 rounded-2xl border text-sm flex items-center justify-between transition-all cursor-pointer ${style}`}
+                          >
+                            <span>{opt}</span>
+                            {isAnswered && optIdx === q.correct && (
+                              <CheckCircle className="h-5 w-5 text-[#30d158]" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {isAnswered && (
+                      <div className="p-5 rounded-2xl bg-black/70 border border-white/10 text-sm flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className={isCorrect ? "text-[#30d158] font-semibold text-xs uppercase tracking-wider" : "text-[#ff453a] font-semibold text-xs uppercase tracking-wider"}>
+                            {isCorrect ? "Correct Solution" : "Explanation & Rationale"}
+                          </span>
+                          {(q.source || q.page_reference) && (
+                            <span className="text-xs text-[#0071e3] font-mono">
+                              {q.source || `Page ${q.page_reference}`}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[#a1a1a6] leading-relaxed text-sm">{q.explanation}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => {
-                      setIsFlipped(false);
-                      setCardIndex((prev) => (prev > 0 ? prev - 1 : flashcards.length - 1));
-                    }}
-                    className="px-6 py-2.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setIsFlipped(true)}
-                    className="px-6 py-2.5 rounded-xl btn-apple-primary text-xs font-medium cursor-pointer"
-                  >
-                    Reveal Definition
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsFlipped(false);
-                      setCardIndex((prev) => (prev < flashcards.length - 1 ? prev + 1 : 0));
-                    }}
-                    className="px-6 py-2.5 rounded-xl btn-apple-secondary text-xs font-medium cursor-pointer"
-                  >
-                    Next Card
-                  </button>
-                </div>
-              )}
+                );
+              })}
 
-              {srsToast && (
-                <div className="px-4 py-2 rounded-xl bg-black border border-[#30d158]/40 text-[#30d158] text-xs font-mono animate-in fade-in flex items-center gap-2">
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  <span>{srsToast}</span>
+              {/* SUBMIT FOR EVALUATION BUTTON */}
+              {!localGradeResult && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleGradeQuiz}
+                    disabled={Object.keys(selectedAnswers).length === 0 || gradingAttempt}
+                    className="w-full py-4 rounded-2xl btn-apple-primary text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 shadow-xl"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>
+                      {gradingAttempt
+                        ? "Grading Attempt & Recording..."
+                        : `Submit Quiz for Diagnostic Evaluation (${Object.keys(selectedAnswers).length}/${quizQuestions.length} Answered)`}
+                    </span>
+                  </button>
                 </div>
               )}
             </>
-          ) : (
-            <div className="p-8 rounded-3xl bg-[#161618] border border-white/10 text-center flex flex-col items-center gap-3">
-              <Layers className="h-8 w-8 text-[#86868b]" />
-              <p className="text-xs text-[#86868b]">Click &apos;Generate New Flashcards Deck&apos; above to create flashcards from course notes.</p>
-            </div>
           )}
         </div>
       )}
+
+
 
       {/* ─── TAB 4: FEYNMAN TEACH-BACK ─── */}
       {activeTab === "teachback" && (
@@ -744,27 +815,90 @@ export function StudentWorkspace({
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-[#161618] overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-black border-b border-white/10 text-[#86868b] uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="p-4">Topic</th>
-                  <th className="p-4">Frequency</th>
-                  <th className="p-4">Weight</th>
-                  <th className="p-4">Exam Probability</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06] text-[#a1a1a6]">
-                {pyqTopics.map((topic, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02]">
-                    <td className="p-4 font-medium text-white">{topic.topic}</td>
-                    <td className="p-4 font-mono text-[#0071e3]">{topic.frequency}</td>
-                    <td className="p-4">{topic.weight}</td>
-                    <td className="p-4 font-mono text-[#30d158] font-semibold">{topic.probability}%</td>
-                  </tr>
+          {/* Unit-Wise Historical Marks Weightage */}
+          {unitDistribution && unitDistribution.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">
+                Unit-Wise Historical Examination Weightage
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {unitDistribution.map((unit, i) => (
+                  <div
+                    key={unit.unit_id || i}
+                    className="p-5 rounded-2xl bg-[#161618] border border-white/10 flex flex-col justify-between gap-3 shadow-md hover:border-white/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-[#0071e3]">
+                        Unit {unit.unit_number}
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        unit.yield_level === "Critical"
+                          ? "bg-[#ff453a]/15 text-[#ff453a] border border-[#ff453a]/30"
+                          : unit.yield_level === "High"
+                          ? "bg-[#ff9f0a]/15 text-[#ff9f0a] border border-[#ff9f0a]/30"
+                          : "bg-white/5 text-[#86868b] border border-white/10"
+                      }`}>
+                        {unit.yield_level || "Core"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-semibold text-white leading-tight">
+                        {unit.title}
+                      </h4>
+                      {unit.questions_count !== undefined && (
+                        <p className="text-[11px] text-[#86868b] mt-1 font-mono">
+                          {unit.questions_count} Questions Analyzed
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
+                      <div className="flex items-baseline justify-between text-xs">
+                        <span className="text-[#86868b]">Marks Weight</span>
+                        <span className="text-white font-mono font-bold text-sm">
+                          {unit.historical_marks_weightage_pct}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-[#0071e3] to-[#30d158] h-full rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, unit.historical_marks_weightage_pct * 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">
+              High-Yield Predictive Question Bank
+            </span>
+            <div className="rounded-3xl border border-white/10 bg-[#161618] overflow-hidden shadow-xl">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-black border-b border-white/10 text-[#86868b] uppercase text-xs tracking-wider">
+                  <tr>
+                    <th className="p-4">Predicted Examination Topic</th>
+                    <th className="p-4">Recurrence Frequency</th>
+                    <th className="p-4">Weightage</th>
+                    <th className="p-4">Exam Probability</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.06] text-[#a1a1a6]">
+                  {pyqTopics.map((topic, i) => (
+                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4 font-medium text-white">{topic.topic}</td>
+                      <td className="p-4 font-mono text-[#0071e3]">{topic.frequency}</td>
+                      <td className="p-4">{topic.weight}</td>
+                      <td className="p-4 font-mono text-[#30d158] font-semibold">{topic.probability}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

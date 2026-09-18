@@ -262,10 +262,89 @@ export async function inspectRSSHPackage(packageId: string): Promise<RSSHInspect
   return res.json();
 }
 
-export async function fetchCurriculum(packageId: string): Promise<any> {
+export interface CurriculumChapter {
+  id: string;
+  unit_id: string;
+  chapter_number: number;
+  title: string;
+  description?: string;
+}
+
+export interface CurriculumUnit {
+  id: string;
+  unit_number: number;
+  title: string;
+  description?: string;
+  chunks?: number;
+  chapters: CurriculumChapter[];
+}
+
+export interface CurriculumResponse {
+  package_id: string;
+  units: CurriculumUnit[];
+  documents: Array<{
+    id: string;
+    filename: string;
+    doc_type: string;
+    file_size_bytes: number;
+    chunk_count: number;
+  }>;
+}
+
+export async function fetchCurriculum(packageId: string): Promise<CurriculumResponse> {
   const res = await fetch(`${API_BASE_URL}/packages/${packageId}/curriculum`);
   if (!res.ok) throw new Error(`Failed to fetch curriculum for ${packageId}`);
   return res.json();
+}
+
+export interface QuizFeedbackItem {
+  question_id: string;
+  question: string;
+  user_answer: string;
+  correct_answer: string;
+  is_correct: boolean;
+  explanation: string;
+  page_reference?: number;
+}
+
+export interface QuizGradeResult {
+  total_questions: number;
+  correct_answers: number;
+  score_percentage: number;
+  grade: "Mastery" | "Proficient" | "Needs Revision" | string;
+  feedback: QuizFeedbackItem[];
+  attempt_id?: string;
+  quiz_id?: string;
+  subject_id?: string;
+}
+
+export interface UnitDistributionItem {
+  unit_id?: string;
+  unit_number: number;
+  title: string;
+  historical_marks_weightage_pct: number;
+  questions_count?: number;
+  yield_level?: string;
+}
+
+export interface PYQPredictionItem {
+  topic: string;
+  probability_score?: number;
+  probability?: number;
+  expected_marks?: string;
+  weight?: string;
+  recurrence_history?: string;
+  frequency?: string;
+  trend?: string;
+}
+
+export interface PYQTrendsResponse {
+  subject_id: string;
+  total_pyqs_analyzed: number;
+  years_span: string;
+  unit_distribution: UnitDistributionItem[];
+  high_probability_predictions: PYQPredictionItem[];
+  recurring_topics?: any[];
 }
 
 export async function generateAdaptiveQuiz(payload: {
@@ -281,6 +360,21 @@ export async function generateAdaptiveQuiz(payload: {
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error("Failed to generate quiz");
+  return res.json();
+}
+
+export async function gradeQuizAttempt(payload: {
+  subject_id?: string;
+  quiz_id?: string;
+  questions: any[];
+  submitted_answers: Record<string | number, any>;
+}): Promise<QuizGradeResult> {
+  const res = await fetch(`${API_BASE_URL}/student/quizzes/grade`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Failed to grade quiz attempt");
   return res.json();
 }
 

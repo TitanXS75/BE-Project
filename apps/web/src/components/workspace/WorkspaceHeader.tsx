@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { CloudAiConfig } from "@/lib/api";
 
-interface UnitItem {
+export interface UnitItem {
   title: string;
   topics: string;
   chunks: number;

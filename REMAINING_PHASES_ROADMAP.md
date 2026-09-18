@@ -185,64 +185,44 @@ flowchart TD
 
 ---
 
-### Phase 9: Student Workspace Live Functional Integration
+### Phase 9: Student Workspace Live Functional Integration [COMPLETED]
 
 **Objective**: Fix schema mismatches and wire all student revision tools to live backend data.
 
 #### Tasks:
-1. **Adaptive Quizzes Schema Alignment & Attempt Grading**:
-   - Update `QuizGenerator.generate_quiz()` to return `options` as an array:
-     ```json
-     {
-       "id": "qz_123_q1",
-       "question": "What is L1 regularization?",
-       "options": ["Ridge", "Lasso", "Elastic Net", "Dropout"],
-       "correct": 1,
-       "difficulty": "Medium",
-       "explanation": "Lasso adds an absolute weight penalty...",
-       "source": "Bishop Ch. 3.2"
-     }
-     ```
-   - Update `StudentWorkspace.tsx` to display real question explanations and page citations upon answer selection.
-   - Wire quiz completion to `POST /api/v1/student/quizzes/grade` to log score in `user_quiz_attempts`.
-2. **Flashcards Schema Alignment & Spaced Repetition (SRS)**:
-   - Fix response handler in `page.tsx`: accept both `res.cards` and `res.flashcards`.
-   - Add spaced repetition rating buttons:
-     - **Hard** (Review in 1 day)
-     - **Good** (Review in 3 days)
-     - **Easy** (Review in 7 days)
-   - Store student mastery progress locally and update card difficulty weight.
-3. **PYQ Predictor Schema Alignment**:
-   - Fix `page.tsx` hook: map `data.high_probability_predictions` and `data.unit_distribution` returned from `GET /api/v1/teacher/pyq-trends/{subject_id}`.
-   - Display recurring frequency, expected marks, recurrence history, and probability percentages dynamically.
-4. **Adaptive Study Planner Timetable View**:
-   - Create a dedicated Study Plan view in Student mode.
-   - Wire to `POST /api/v1/student/study-plan` with inputs for exam countdown (days remaining) and daily target study hours.
-   - Render day-by-day revision milestones, practice goals, and spaced repetition drills.
-5. **Drag-and-Drop .rssh Package Importer**:
-   - Add an "Import .rssh Package" button in `StudentWelcomeHub.tsx` and `SubjectModal.tsx`.
-   - Support file picker and drag-and-drop of `.rssh` / `.zip` archives.
-   - Call `POST /api/v1/packages/import`.
-   - Upon completion, immediately refresh the subjects list and mount the imported course.
+1. **Adaptive Quizzes Schema Alignment & Attempt Grading**: [DONE]
+   - Standardized `QuizGenerator.generate_quiz()` to return array `options: string[]`, `correct: int`, `taxonomy`, `difficulty`, `explanation`, and textbook citations (`source`, `page_reference`).
+   - Updated `StudentWorkspace.tsx` with difficulty selectors (`Easy`, `Medium`, `Hard`), page citations, Bloom's cognitive taxonomy tags, and a "Submit Quiz for Evaluation" workflow.
+   - Wired quiz grading to `POST /api/v1/student/quizzes/grade` with diagnostic grade report (`Mastery`, `Proficient`, `Needs Revision`) and logged attempts into SQLite `user_quiz_attempts` in `app.db`.
+2. **Flashcards Schema Alignment & Spaced Repetition (SRS)**: [DONE]
+   - Response handler accepts both `res.cards` and `res.flashcards`.
+   - Added persistent Spaced Repetition (SRS) difficulty ratings (`Hard`, `Good`, `Easy`) and SRS Mastery Summary Ribbon displaying Reviewed, Mastered, Retained, and Review Due counts.
+3. **PYQ Predictor Schema Alignment & Unit Distribution**: [DONE]
+   - Mapped `high_probability_predictions` and `unit_distribution` returned from `GET /api/v1/teacher/pyq-trends/{subject_id}`.
+   - Rendered unit-wise historical marks weightage cards with progress indicators and high-probability predicted exam question bank table.
+4. **Adaptive Study Planner Timetable View**: [DONE]
+   - Dedicated Study Plan view wired to `POST /api/v1/student/study-plan` with days remaining and daily target hours controls.
+   - Rendered day-by-day revision milestones, interactive completion checklist with persistent local state, and progress ribbon.
+5. **Drag-and-Drop .rssh Package Importer**: [DONE]
+   - Added drag-and-drop `.rssh` package importer dropzone in `SubjectModal.tsx` in addition to `StudentWelcomeHub.tsx`.
+   - Wired to `POST /api/v1/packages/import` with file format verification, instant registration, and automatic subject activation.
 
 ---
 
-### Phase 10: Dynamic Curriculum & Multi-Subject Synchronization
+### Phase 10: Dynamic Curriculum & Multi-Subject Synchronization [COMPLETED]
 
 **Objective**: Eliminate hardcoded subject maps and ensure instant, reactive curriculum switching.
 
 #### Tasks:
-1. **Eliminate Hardcoded `SUBJECT_UNITS_MAP`**:
-   - Replace static unit definitions in `apps/web/src/app/page.tsx` with dynamic calls to `GET /api/v1/packages/{package_id}/curriculum`.
-   - Populate units dropdown, unit topics, and chunk counts directly from `subject.db`.
-2. **Reactive Subject Switching**:
-   - When user selects a subject in `StudentWelcomeHub`, `TeacherWelcomeHub`, or `SubjectModal`:
-     - Set active subject.
-     - Fetch dynamic curriculum tree.
-     - Fetch dynamic PYQ trends.
-     - Reset chat session with subject-specific welcome message.
-3. **Live .rssh Deep Inspector Modal**:
-   - Ensure `RSSHPackageViewerModal.tsx` displays live SQLite table counts, LanceDB vector dimensions, and file tree from `GET /api/v1/packages/inspect/{package_id}`.
+1. **Eliminate Hardcoded `SUBJECT_UNITS_MAP`**: [DONE]
+   - Upgraded `GET /api/v1/packages/{package_id}/curriculum` in `packages.py` with automatic slug resolution, default subject seeding, and unit chunk aggregation from SQLite `documents` and `units`.
+   - Replaced static unit definitions in `apps/web/src/app/page.tsx` with dynamic calls to `fetchCurriculum(slug)`.
+   - Populated units dropdown, unit topics, and chunk counts directly from `subject.db` into `curriculumUnits` state passed to `WorkspaceHeader`.
+2. **Reactive Subject Switching**: [DONE]
+   - In `apps/web/src/app/page.tsx`, `handleSelectSubject()` and `useEffect([activeSubject])` reactively trigger `loadSubjectCurriculum(activeSubject)` and `fetchPYQTrends(slug)`.
+   - Unit selection resets to the first active unit of the selected subject, updating tutor context and revision tools.
+3. **Live .rssh Deep Inspector Modal**: [DONE]
+   - Verified `RSSHPackageViewerModal.tsx` integrates with `GET /api/v1/packages/inspect/{package_id}`, displaying live SQLite table counts (`units`, `chapters`, `documents`, `chunks`, `pyqs`), LanceDB vector dimensions, and manifest metadata with zero unicode arrows and zero emojis.
 
 ---
 

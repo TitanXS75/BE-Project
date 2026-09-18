@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+import uuid
+import json
+import aiosqlite
+from app.config import settings
+from app.db.connection import init_app_database
 from app.ai.student.quiz_generator import QuizGenerator
 from app.ai.student.teach_back import TeachBackEvaluator
 from app.ai.student.flashcard_generator import FlashcardGenerator
@@ -17,6 +22,8 @@ class QuizGenerationRequest(BaseModel):
 
 
 class QuizGradeRequest(BaseModel):
+    subject_id: Optional[str] = "general"
+    quiz_id: Optional[str] = None
     questions: List[Dict[str, Any]]
     submitted_answers: Dict[str, Any]
 
@@ -59,12 +66,41 @@ async def generate_quiz(payload: QuizGenerationRequest):
 
 @router.post("/quizzes/grade", summary="Grade submitted quiz answers")
 async def grade_quiz(payload: QuizGradeRequest):
-    """Grades student answers and provides instant diagnostic feedback."""
+    """Grades student answers, computes diagnostic feedback, and records attempt in SQLite."""
     try:
-        return QuizGenerator.grade_quiz(
+        graded = QuizGenerator.grade_quiz(
             questions=payload.questions,
             submitted_answers=payload.submitted_answers
         )
+
+        # Record quiz attempt in app.db for persistent progress tracking
+        try:
+            quiz_id = payload.quiz_id or f"qz_{uuid.uuid4().hex[:8]}"
+            subject_id = payload.subject_id or "general"
+            score_pct = graded.get("score_percentage", 0.0)
+            attempt_id = f"att_{uuid.uuid4().hex[:8]}"
+            answers_json = json.dumps(payload.submitted_answers)
+
+            db_path = settings.APP_DB_PATH
+            if not db_path.exists():
+                await init_app_database()
+
+            async with aiosqlite.connect(db_path) as db:
+                await db.execute(
+                    """
+                    INSERT INTO user_quiz_attempts (id, subject_id, quiz_id, score_percentage, answers_json)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (attempt_id, subject_id, quiz_id, score_pct, answers_json)
+                )
+                await db.commit()
+            graded["attempt_id"] = attempt_id
+            graded["quiz_id"] = quiz_id
+            graded["subject_id"] = subject_id
+        except Exception:
+            pass  # Non-blocking for grading response
+
+        return graded
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to grade quiz: {str(e)}")
 
