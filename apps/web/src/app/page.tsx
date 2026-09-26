@@ -364,7 +364,17 @@ export default function Home() {
         setDiagnostics({
           python: { installed: true, version: "3.13.14", executable: "python.exe", status: "ready" },
           hardware: { os: "Windows 11 AMD64", cpu_cores: 12, ram_total_gb: 15.7, ram_available_gb: 11.2, gpu: "Integrated Graphics" },
-          ollama: { connected: false, url: "http://localhost:11434", version: "0.5.4", installed_models: ["qwen2.5-coder:7b", "llama3.2:3b"] },
+          ollama: {
+            installed: true,
+            running: false,
+            connected: false,
+            status: "installed_not_running",
+            url: "http://localhost:11434",
+            version: "0.5.4",
+            installed_models: ["qwen2.5-coder:7b", "llama3.2:3b"],
+            models_count: 2,
+            executable_path: "ollama.exe"
+          },
           storage: { app_data_path: "d:/BE-Project/storage", subjects_count: 4 }
         });
       }
