@@ -110,15 +110,108 @@ async function ensureBackendRunning(projectRoot) {
 }
 
 /**
- * Checks local Ollama status.
+ * Locates the Ollama executable on the system.
+ */
+function findOllamaExecutable() {
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || '';
+    const progFiles = process.env.ProgramFiles || '';
+    const progFilesX86 = process.env['ProgramFiles(x86)'] || '';
+    const userProfile = process.env.USERPROFILE || '';
+
+    const candidates = [
+      path.join(localAppData, 'Programs', 'Ollama', 'ollama.exe'),
+      path.join(progFiles, 'Ollama', 'ollama.exe'),
+      path.join(progFilesX86, 'Ollama', 'ollama.exe'),
+      path.join(userProfile, 'AppData', 'Local', 'Programs', 'Ollama', 'ollama.exe'),
+      'C:\\Program Files\\Ollama\\ollama.exe',
+    ];
+
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  } else {
+    const candidates = [
+      '/usr/local/bin/ollama',
+      '/usr/bin/ollama',
+      '/opt/homebrew/bin/ollama',
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  }
+  return null;
+}
+
+/**
+ * Checks local Ollama status, availability, and installed models.
  */
 async function checkOllamaStatus() {
   const ollamaUrl = 'http://127.0.0.1:11434/api/version';
-  const isOnline = await checkEndpoint(ollamaUrl, 1000);
+  const isOnline = await checkEndpoint(ollamaUrl, 1200);
+  const execPath = findOllamaExecutable();
+  const isInstalled = execPath !== null || isOnline;
+
+  let version = null;
+  let modelsCount = 0;
+
+  if (isOnline) {
+    try {
+      const verData = await new Promise((resolve) => {
+        http.get('http://127.0.0.1:11434/api/version', (res) => {
+          let body = '';
+          res.on('data', (c) => (body += c));
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(body));
+            } catch {
+              resolve(null);
+            }
+          });
+        }).on('error', () => resolve(null));
+      });
+      if (verData) version = verData.version;
+    } catch {
+      // Ignored
+    }
+  }
+
   return {
     online: isOnline,
+    running: isOnline,
+    installed: isInstalled,
+    status: isOnline ? 'running' : isInstalled ? 'installed_not_running' : 'not_installed',
+    version,
+    executablePath: execPath,
     url: 'http://127.0.0.1:11434',
   };
+}
+
+/**
+ * Launches local Ollama daemon if installed.
+ */
+async function startOllamaDaemon() {
+  const status = await checkOllamaStatus();
+  if (status.online) return { success: true, message: 'Already running' };
+
+  const execPath = status.executablePath || 'ollama';
+  try {
+    const child = spawn(execPath, ['serve'], {
+      detached: true,
+      windowsHide: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      const active = await checkEndpoint('http://127.0.0.1:11434/api/version', 800);
+      if (active) return { success: true, message: 'Ollama started' };
+    }
+    return { success: false, message: 'Ollama process started but not responding yet' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
 /**
@@ -143,6 +236,8 @@ function stopDaemons() {
 module.exports = {
   ensureBackendRunning,
   checkOllamaStatus,
+  startOllamaDaemon,
+  findOllamaExecutable,
   checkEndpoint,
   stopDaemons,
 };

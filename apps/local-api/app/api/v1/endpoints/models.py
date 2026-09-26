@@ -6,6 +6,7 @@ import time
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from app.config import settings
+from app.ai.ollama_detector import inspect_ollama_daemon, launch_ollama_daemon
 
 router = APIRouter()
 
@@ -213,17 +214,16 @@ async def validate_cloud_key(payload: ValidateCloudKeyRequest):
         }
 
 
-@router.get("/status", summary="Check Ollama daemon status")
+@router.get("/status", summary="Check Ollama daemon status & local availability")
 async def get_ollama_status():
-    """Checks whether Ollama daemon is reachable."""
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(f"{settings.OLLAMA_BASE_URL}/api/version")
-            if resp.status_code == 200:
-                return {"status": "running", "version": resp.json().get("version", "unknown")}
-            return {"status": "unavailable", "detail": f"Ollama returned HTTP {resp.status_code}"}
-    except Exception as e:
-        return {"status": "stopped", "detail": str(e), "tip": "Please install and launch Ollama (ollama serve)"}
+    """Checks whether Ollama is installed on the host and actively responding."""
+    return await inspect_ollama_daemon(timeout_sec=2.5)
+
+
+@router.post("/start-ollama", summary="Start local Ollama daemon service")
+async def start_ollama():
+    """Attempts to spawn and launch the local Ollama background service."""
+    return await launch_ollama_daemon()
 
 
 @router.get("/local", summary="List locally installed Ollama models")

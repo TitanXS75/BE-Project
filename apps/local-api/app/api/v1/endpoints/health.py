@@ -7,6 +7,7 @@ import sys
 import os
 import psutil
 from app.config import settings
+from app.ai.ollama_detector import inspect_ollama_daemon
 
 router = APIRouter()
 
@@ -46,24 +47,8 @@ async def get_system_diagnostics():
     cpu_cores = os.cpu_count() or 4
     os_name = f"{platform.system()} {platform.release()} ({platform.machine()})"
     
-    # 3. Ollama Connectivity & Installed Models
-    ollama_online = False
-    ollama_version = None
-    installed_models = []
-    
-    try:
-        async with httpx.AsyncClient(timeout=2.5) as client:
-            ver_resp = await client.get(f"{settings.OLLAMA_BASE_URL}/api/version")
-            if ver_resp.status_code == 200:
-                ollama_online = True
-                ollama_version = ver_resp.json().get("version")
-                
-            tags_resp = await client.get(f"{settings.OLLAMA_BASE_URL}/api/tags")
-            if tags_resp.status_code == 200:
-                models_data = tags_resp.json().get("models", [])
-                installed_models = [m.get("name") for m in models_data]
-    except Exception:
-        ollama_online = False
+    # 3. Comprehensive Ollama Availability & Service Diagnostics
+    ollama_diag = await inspect_ollama_daemon(timeout_sec=2.5)
 
     return {
         "python": {
@@ -79,12 +64,7 @@ async def get_system_diagnostics():
             "ram_available_gb": ram_available,
             "gpu": "Standard / Integrated Acceleration",
         },
-        "ollama": {
-            "connected": ollama_online,
-            "url": settings.OLLAMA_BASE_URL,
-            "version": ollama_version,
-            "installed_models": installed_models
-        },
+        "ollama": ollama_diag,
         "storage": {
             "app_data_path": str(settings.DATA_DIR),
             "subjects_count": len(list(settings.SUBJECTS_DIR.iterdir())) if settings.SUBJECTS_DIR.exists() else 0
@@ -95,25 +75,11 @@ async def get_system_diagnostics():
 @router.get("/system-status", summary="System and Ollama status check")
 async def get_system_status():
     """Checks the status of the local backend and connectivity to the local Ollama daemon."""
-    ollama_online = False
-    ollama_version = None
-    
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            resp = await client.get(f"{settings.OLLAMA_BASE_URL}/api/version")
-            if resp.status_code == 200:
-                ollama_online = True
-                ollama_version = resp.json().get("version")
-    except Exception:
-        ollama_online = False
+    ollama_diag = await inspect_ollama_daemon(timeout_sec=1.5)
 
     return {
         "api_status": "ok",
-        "ollama": {
-            "connected": ollama_online,
-            "url": settings.OLLAMA_BASE_URL,
-            "version": ollama_version,
-        },
+        "ollama": ollama_diag,
         "storage": {
             "app_data_path": str(settings.DATA_DIR),
             "subjects_count": len(list(settings.SUBJECTS_DIR.iterdir())) if settings.SUBJECTS_DIR.exists() else 0

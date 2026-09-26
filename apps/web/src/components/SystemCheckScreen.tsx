@@ -58,14 +58,26 @@ export function SystemCheckScreen({
               <div>
                 <p className="text-xs font-semibold text-white">Local Ollama Engine</p>
                 <p className="text-[11px] text-[#86868b] mt-0.5">
-                  {diagnostics?.ollama.connected
-                    ? `Connected (v${diagnostics.ollama.version || "0.5.4"})`
-                    : "Local Daemon Ready / Simulation Mode"}
+                  {diagnostics?.ollama.running
+                    ? `Running (v${diagnostics.ollama.version || "active"} • ${diagnostics.ollama.models_count ?? diagnostics.ollama.installed_models?.length ?? 0} Models Installed)`
+                    : diagnostics?.ollama.installed
+                    ? "Ollama Installed on Device • Background Service Stopped"
+                    : "Not Detected on Device • Hybrid Cloud Fallback Ready"}
                 </p>
               </div>
             </div>
             {scanStep >= 2 ? (
-              <CheckCircle2 className="h-5 w-5 text-[#30d158]" />
+              diagnostics?.ollama.running ? (
+                <CheckCircle2 className="h-5 w-5 text-[#30d158]" />
+              ) : diagnostics?.ollama.installed ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-medium">
+                  Service Stopped
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#86868b] font-medium">
+                  Cloud Fallback
+                </span>
+              )
             ) : (
               <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
             )}

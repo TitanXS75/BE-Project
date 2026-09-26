@@ -3,13 +3,22 @@ export const API_BASE_URL =
   (import.meta as any).env?.VITE_API_URL ||
   "http://127.0.0.1:8000/api/v1";
 
+export interface OllamaDiagnostics {
+  installed: boolean;
+  running: boolean;
+  connected: boolean;
+  status: "running" | "installed_not_running" | "not_installed";
+  version: string | null;
+  installed_models: string[];
+  models_count?: number;
+  executable_path?: string | null;
+  url: string;
+  message?: string;
+}
+
 export interface SystemStatus {
   api_status: string;
-  ollama: {
-    connected: boolean;
-    url: string;
-    version: string | null;
-  };
+  ollama: OllamaDiagnostics;
   storage: {
     app_data_path: string;
     subjects_count: number;
@@ -55,12 +64,7 @@ export interface SystemDiagnostics {
     ram_available_gb: number;
     gpu: string;
   };
-  ollama: {
-    connected: boolean;
-    url: string;
-    version: string | null;
-    installed_models: string[];
-  };
+  ollama: OllamaDiagnostics;
   storage: {
     app_data_path: string;
     subjects_count: number;
@@ -212,6 +216,20 @@ export async function requestModelRecommendation(geminiApiKey?: string): Promise
 export async function fetchSystemStatus(): Promise<SystemStatus> {
   const res = await fetch(`${API_BASE_URL}/system-status`);
   if (!res.ok) throw new Error("Failed to fetch system status");
+  return res.json();
+}
+
+export async function fetchOllamaStatus(): Promise<OllamaDiagnostics> {
+  const res = await fetch(`${API_BASE_URL}/models/status`);
+  if (!res.ok) throw new Error("Failed to fetch Ollama status");
+  return res.json();
+}
+
+export async function startOllamaDaemon(): Promise<{ status: string; message?: string; error?: string }> {
+  const res = await fetch(`${API_BASE_URL}/models/start-ollama`, {
+    method: "POST"
+  });
+  if (!res.ok) throw new Error("Failed to start Ollama daemon");
   return res.json();
 }
 
