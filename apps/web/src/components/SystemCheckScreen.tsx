@@ -1,6 +1,7 @@
 import React from "react";
 import { Laptop, Terminal, Cpu, Activity, HardDrive, CheckCircle2 } from "lucide-react";
 import { SystemDiagnostics } from "@/lib/api";
+import { AppleLoader } from "./ui/AppleLoader";
 
 interface SystemCheckScreenProps {
   diagnostics: SystemDiagnostics | null;
@@ -46,7 +47,7 @@ export function SystemCheckScreen({
             {scanStep >= 1 ? (
               <CheckCircle2 className="h-5 w-5 text-[#30d158]" />
             ) : (
-              <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <AppleLoader size="sm" />
             )}
           </div>
 
@@ -79,7 +80,7 @@ export function SystemCheckScreen({
                 </span>
               )
             ) : (
-              <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <AppleLoader size="sm" />
             )}
           </div>
 
@@ -100,7 +101,7 @@ export function SystemCheckScreen({
             {scanStep >= 3 ? (
               <CheckCircle2 className="h-5 w-5 text-[#30d158]" />
             ) : (
-              <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <AppleLoader size="sm" />
             )}
           </div>
 
@@ -121,7 +122,7 @@ export function SystemCheckScreen({
             {scanStep >= 4 ? (
               <CheckCircle2 className="h-5 w-5 text-[#30d158]" />
             ) : (
-              <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <AppleLoader size="sm" />
             )}
           </div>
         </div>

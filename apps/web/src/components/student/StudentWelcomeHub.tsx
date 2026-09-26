@@ -16,6 +16,7 @@ import {
   FileArchive
 } from "lucide-react";
 import { importRSSHPackage } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
 
 export interface SubjectItem {
   name: string;
@@ -168,52 +169,71 @@ export function StudentWelcomeHub({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {subjectsList.map((subj) => {
-            const isCurrent = selected === subj.name;
-            return (
-              <div
-                key={subj.code}
-                onClick={() => handleStartMounting(subj.name)}
-                className={`p-6 sm:p-7 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between gap-5 relative overflow-hidden ${
-                  isCurrent
-                    ? "bg-[#1c1c1e] border-[#0071e3] shadow-lg ring-1 ring-[#0071e3]/40"
-                    : "bg-[#161618] border-white/10 hover:border-white/20 hover:bg-[#1a1a1c]"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3.5">
-                    <div className="h-12 w-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-[#0071e3] group-hover:scale-105 transition-transform">
-                      <BookOpen className="h-6 w-6" />
+        {subjectsList.length === 0 ? (
+          <div className="p-12 rounded-3xl bg-[#161618] border border-white/10 flex flex-col items-center justify-center text-center gap-4">
+            <BookOpen className="h-10 w-10 text-[#86868b]" />
+            <div>
+              <h3 className="text-base font-bold text-white">No Course Packages Mounted</h3>
+              <p className="text-xs text-[#86868b] mt-1 max-w-md">
+                Import an existing .rssh syllabus package from your instructor or storage to begin curriculum-grounded learning.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="px-5 py-2.5 rounded-xl btn-apple-primary text-xs font-semibold flex items-center gap-2 cursor-pointer"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Import Course Package (.rssh)</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {subjectsList.map((subj) => {
+              const isCurrent = selected === subj.name;
+              return (
+                <div
+                  key={subj.code}
+                  onClick={() => handleStartMounting(subj.name)}
+                  className={`p-6 sm:p-7 rounded-3xl border transition-all cursor-pointer group flex flex-col justify-between gap-5 relative overflow-hidden ${
+                    isCurrent
+                      ? "bg-[#1c1c1e] border-[#0071e3] shadow-lg ring-1 ring-[#0071e3]/40"
+                      : "bg-[#161618] border-white/10 hover:border-white/20 hover:bg-[#1a1a1c]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <div className="h-12 w-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center text-[#0071e3] group-hover:scale-105 transition-transform">
+                        <BookOpen className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-mono text-[#0071e3] font-semibold block">
+                          {subj.code}
+                        </span>
+                        <h3 className="text-lg font-bold text-white group-hover:text-[#0071e3] transition-colors">
+                          {subj.name}
+                        </h3>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[11px] font-mono text-[#0071e3] font-semibold block">
-                        {subj.code}
-                      </span>
-                      <h3 className="text-lg font-bold text-white group-hover:text-[#0071e3] transition-colors">
-                        {subj.name}
-                      </h3>
-                    </div>
+                    <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-black text-[#86868b] border border-white/5">
+                      {subj.rssh}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-black text-[#86868b] border border-white/5">
-                    {subj.rssh}
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-between text-xs sm:text-sm text-[#86868b] pt-4 border-t border-white/[0.06]">
-                  <div className="flex items-center gap-3">
-                    <span>{subj.units} Syllabus Units</span>
-                    <span>•</span>
-                    <span className="text-[#30d158] font-mono font-medium">{subj.chunks} Dense Chunks</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] transition-all">
-                    <span>Load Subject</span>
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-[#86868b] pt-4 border-t border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                      <span>{subj.units} Syllabus Units</span>
+                      <span>•</span>
+                      <span className="text-[#30d158] font-mono font-medium">{subj.chunks} Dense Chunks</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-white font-medium group-hover:text-[#0071e3] transition-all">
+                      <span>Load Subject</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ─── ANIMATED .RSSH MOUNTING MODAL ─── */}
@@ -265,7 +285,7 @@ export function StudentWelcomeHub({
                     {isPassed ? (
                       <CheckCircle2 className="h-3.5 w-3.5 text-[#30d158] flex-shrink-0" />
                     ) : isCurrent ? (
-                      <div className="h-3.5 w-3.5 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      <AppleLoader size="xs" className="flex-shrink-0" />
                     ) : (
                       <div className="h-3.5 w-3.5 rounded-full border border-white/10 flex-shrink-0" />
                     )}
@@ -352,7 +372,7 @@ export function StudentWelcomeHub({
 
             {isImporting && (
               <div className="p-4 rounded-xl bg-black/40 border border-[#0071e3]/30 flex items-center gap-3 text-xs font-mono text-[#0071e3]">
-                <div className="h-4 w-4 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                <AppleLoader size="xs" className="flex-shrink-0" />
                 <span>Unpacking SQLite schema &amp; mounting vector indices...</span>
               </div>
             )}

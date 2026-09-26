@@ -8,6 +8,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { importRSSHPackage } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
 
 export interface SubjectItem {
   name: string;
@@ -143,7 +144,7 @@ export function SubjectModal({
 
           <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#0071e3]">
             {isImporting ? (
-              <Sparkles className="h-5 w-5 animate-spin" />
+              <AppleLoader size="sm" />
             ) : (
               <Upload className="h-5 w-5" />
             )}

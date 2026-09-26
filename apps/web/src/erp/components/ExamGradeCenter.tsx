@@ -4,9 +4,11 @@ import {
   Plus,
   Calendar,
   CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { Exam, SchoolClass, Course, Student } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function ExamGradeCenter() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -290,39 +292,32 @@ export function ExamGradeCenter() {
                   <label className="text-xs font-semibold text-[#86868b] mb-1 block">
                     Class
                   </label>
-                  <select
+                  <AppleSelect
                     value={newExamClassId}
-                    onChange={(e) => {
-                      setNewExamClassId(e.target.value);
-                      const crs = courses.filter((c) => c.class_id === e.target.value);
+                    onChange={(val) => {
+                      setNewExamClassId(val);
+                      const crs = courses.filter((c) => c.class_id === val);
                       if (crs.length > 0) setNewExamCourseId(crs[0].id);
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={classes.map((cls) => ({ value: cls.id, label: cls.name }))}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-[#86868b] mb-1 block">
                     Course
                   </label>
-                  <select
+                  <AppleSelect
                     value={newExamCourseId}
-                    onChange={(e) => setNewExamCourseId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    {courses
+                    onChange={(val) => setNewExamCourseId(val)}
+                    options={courses
                       .filter((c) => c.class_id === newExamClassId)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.code})
-                        </option>
-                      ))}
-                  </select>
+                      .map((c) => ({
+                        value: c.id,
+                        label: `${c.name} (${c.code})`,
+                      }))}
+                    className="w-full"
+                  />
                 </div>
               </div>
 

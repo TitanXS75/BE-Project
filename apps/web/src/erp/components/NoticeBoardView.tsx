@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Megaphone, Plus, CheckCircle2 } from "lucide-react";
+import { Megaphone, Plus, CheckCircle2, ChevronDown } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { Notice } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function NoticeBoardView() {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -135,16 +136,17 @@ export function NoticeBoardView() {
                   <label className="text-xs font-semibold text-[#86868b] mb-1 block">
                     Priority Level
                   </label>
-                  <select
+                  <AppleSelect
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="low">Low</option>
-                  </select>
+                    onChange={(val) => setPriority(val as any)}
+                    options={[
+                      { value: "normal", label: "Normal" },
+                      { value: "high", label: "High" },
+                      { value: "urgent", label: "Urgent" },
+                      { value: "low", label: "Low" },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-[#86868b] mb-1 block">

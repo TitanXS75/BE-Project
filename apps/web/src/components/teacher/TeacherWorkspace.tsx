@@ -10,7 +10,8 @@ import {
   AlertCircle,
   File,
   Trash2,
-  FolderOpen
+  FolderOpen,
+  ChevronDown
 } from "lucide-react";
 import {
   CloudAiConfig,
@@ -25,6 +26,8 @@ import {
   DocumentListItem,
   ExamPaperResponse
 } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
+import { AppleSelect } from "../ui/AppleSelect";
 
 export type TeacherTab = "curriculum" | "exam_builder" | "slides" | "export";
 
@@ -370,23 +373,25 @@ export function TeacherWorkspace({
                 Document Upload
               </span>
               <div className="flex items-center gap-3">
-                <select
+                <AppleSelect
                   value={selectedDocType}
-                  onChange={(e) => setSelectedDocType(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg bg-black border border-white/10 text-xs text-white outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  <option value="Textbook">Textbook</option>
-                  <option value="Syllabus">Syllabus</option>
-                  <option value="Notes">Notes</option>
-                  <option value="PYQ">PYQ Paper</option>
-                  <option value="Assignment">Assignment</option>
-                </select>
+                  onChange={(val) => setSelectedDocType(val)}
+                  options={[
+                    { value: "Textbook", label: "Textbook" },
+                    { value: "Syllabus", label: "Syllabus" },
+                    { value: "Notes", label: "Notes" },
+                    { value: "PYQ", label: "PYQ Paper" },
+                    { value: "Assignment", label: "Assignment" },
+                  ]}
+                  size="sm"
+                  className="min-w-[130px]"
+                />
                 <input
                   type="text"
                   value={selectedUnitId}
                   onChange={(e) => setSelectedUnitId(e.target.value)}
                   placeholder="Unit ID (optional)"
-                  className="px-3 py-1.5 rounded-lg bg-black border border-white/10 text-xs text-white outline-none focus:border-[#0071e3] w-36"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1c1c1e] hover:bg-[#252528] border border-white/10 hover:border-white/20 text-xs text-white outline-none focus:border-[#0071e3] w-36 transition-all shadow-sm placeholder:text-[#515154]"
                 />
               </div>
             </div>
@@ -414,7 +419,7 @@ export function TeacherWorkspace({
               />
               {uploadingFile ? (
                 <>
-                  <div className="h-8 w-8 border-2 border-white/20 border-t-[#0071e3] rounded-full animate-spin" />
+                  <AppleLoader size="md" />
                   <span className="text-sm text-white font-medium">Processing and ingesting document...</span>
                   <span className="text-xs text-[#86868b]">Extracting pages, creating semantic chunks, indexing vectors</span>
                 </>
@@ -516,7 +521,7 @@ export function TeacherWorkspace({
               >
                 {analyzingDoc ? (
                   <>
-                    <div className="h-3.5 w-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <AppleLoader size="xs" />
                     Reading &amp; Understanding with AI...
                   </>
                 ) : (
@@ -654,7 +659,7 @@ export function TeacherWorkspace({
             >
               {generatingExam ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <AppleLoader size="sm" />
                   Generating Exam Paper with AI...
                 </>
               ) : (
@@ -689,7 +694,7 @@ export function TeacherWorkspace({
                   className="px-4 py-1.5 rounded-full btn-apple-secondary text-xs cursor-pointer flex items-center gap-1.5"
                 >
                   {downloadingDocx ? (
-                    <div className="h-3.5 w-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <AppleLoader size="xs" />
                   ) : (
                     <Download className="h-3.5 w-3.5" />
                   )}
@@ -775,7 +780,7 @@ export function TeacherWorkspace({
             >
               {generatingSlides ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <AppleLoader size="sm" />
                   Synthesizing Presentation with AI...
                 </>
               ) : (
@@ -812,7 +817,7 @@ export function TeacherWorkspace({
                     className="px-4 py-1.5 rounded-full btn-apple-primary text-xs cursor-pointer flex items-center gap-1.5"
                   >
                     {downloadingPptx ? (
-                      <div className="h-3.5 w-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <AppleLoader size="xs" />
                     ) : (
                       <Download className="h-3.5 w-3.5" />
                     )}
@@ -898,7 +903,7 @@ export function TeacherWorkspace({
           >
             {isExporting || downloadingRssh ? (
               <>
-                <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <AppleLoader size="sm" />
                 {downloadingRssh ? "Downloading..." : "Compiling package..."}
               </>
             ) : exportComplete ? (

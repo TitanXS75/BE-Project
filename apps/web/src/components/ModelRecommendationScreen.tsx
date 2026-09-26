@@ -1,6 +1,7 @@
 import React from "react";
 import { Key, ExternalLink, CheckCircle2 } from "lucide-react";
 import { SystemDiagnostics, ModelRecommendation } from "@/lib/api";
+import { AppleLoader } from "./ui/AppleLoader";
 
 interface ModelRecommendationScreenProps {
   diagnostics: SystemDiagnostics | null;
@@ -81,7 +82,7 @@ export function ModelRecommendationScreen({
               className="px-4 py-2 rounded-xl btn-apple-primary disabled:opacity-40 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
             >
               {isRecommending ? (
-                <div className="h-3.5 w-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <AppleLoader size="xs" />
               ) : (
                 <span>Apply Key</span>
               )}

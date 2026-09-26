@@ -8,9 +8,11 @@ import {
   Phone,
   MapPin,
   Calendar,
+  ChevronDown,
 } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { Student, SchoolClass, Section } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function StudentDirectory() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -125,7 +127,7 @@ export function StudentDirectory() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-white/[0.08]">
+      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-white/[0.08] relative z-30">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b]" />
           <input
@@ -140,18 +142,15 @@ export function StudentDirectory() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Filter className="h-3.5 w-3.5 text-[#86868b]" />
           <span className="text-xs text-[#86868b]">Class:</span>
-          <select
+          <AppleSelect
             value={selectedClassFilter}
-            onChange={(e) => setSelectedClassFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-          >
-            <option value="all">All Classes ({students.length})</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedClassFilter(val)}
+            options={[
+              { value: "all", label: `All Classes (${students.length})` },
+              ...classes.map((cls) => ({ value: cls.id, label: cls.name })),
+            ]}
+            className="min-w-[180px]"
+          />
         </div>
       </div>
 
@@ -351,32 +350,33 @@ export function StudentDirectory() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                  <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                     Gender
                   </label>
-                  <select
+                  <AppleSelect
                     value={gender}
-                    onChange={(e) => setGender(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
+                    onChange={(val) => setGender(val as any)}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                  <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                     Date of Birth
                   </label>
                   <input
                     type="date"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161618] hover:bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                  <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                     Roll Number
                   </label>
                   <input
@@ -384,47 +384,40 @@ export function StudentDirectory() {
                     placeholder="CS10-05"
                     value={rollNumber}
                     onChange={(e) => setRollNumber(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#161618] hover:bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                  <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                     Class Placement
                   </label>
-                  <select
+                  <AppleSelect
                     value={targetClassId}
-                    onChange={(e) => {
-                      setTargetClassId(e.target.value);
-                      const secList = sections.filter((s) => s.class_id === e.target.value);
+                    onChange={(val) => {
+                      setTargetClassId(val);
+                      const secList = sections.filter((s) => s.class_id === val);
                       if (secList.length > 0) setTargetSectionId(secList[0].id);
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={classes.map((cls) => ({ value: cls.id, label: cls.name }))}
+                    className="w-full"
+                  />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                  <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                     Section
                   </label>
-                  <select
+                  <AppleSelect
                     value={targetSectionId}
-                    onChange={(e) => setTargetSectionId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                  >
-                    {availableSectionsForModal.map((sec) => (
-                      <option key={sec.id} value={sec.id}>
-                        {sec.name} ({sec.room_number || "Room"})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setTargetSectionId(val)}
+                    options={availableSectionsForModal.map((sec) => ({
+                      value: sec.id,
+                      label: `${sec.name} (${sec.room_number || "Room"})`,
+                    }))}
+                    className="w-full"
+                  />
                 </div>
               </div>
 

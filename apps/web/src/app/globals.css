@@ -130,3 +130,71 @@ code, kbd, samp, pre {
   color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+
+/* Professional Select & Dropdown Styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #1c1c1e;
+  color: #f5f5f7;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: #222226;
+}
+
+select:focus {
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25);
+}
+
+select option {
+  background-color: #161618;
+  color: #f5f5f7;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+select option:checked {
+  background-color: #0071e3;
+  color: #ffffff;
+}
+
+/* Apple Concentric Glow Loader */
+@keyframes applePulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.apple-loader-glow {
+  animation: applePulseGlow 2s infinite ease-in-out;
+}
+
+/* Shimmer Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.09) 37%, rgba(255,255,255,0.03) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+

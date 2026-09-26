@@ -17,6 +17,7 @@ import {
   Hash
 } from "lucide-react";
 import { SystemDiagnostics, ModelRecommendation } from "@/lib/api";
+import { AppleLoader } from "./ui/AppleLoader";
 
 interface OnboardingStepperProps {
   diagnostics: SystemDiagnostics | null;
@@ -116,7 +117,7 @@ export function OnboardingStepper({
                       </p>
                     </div>
                   </div>
-                  {scanStep >= 1 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  {scanStep >= 1 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <AppleLoader size="sm" />}
                 </div>
 
                 <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex items-center justify-between shadow-sm">
@@ -131,7 +132,7 @@ export function OnboardingStepper({
                       </p>
                     </div>
                   </div>
-                  {scanStep >= 2 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  {scanStep >= 2 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <AppleLoader size="sm" />}
                 </div>
 
                 <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex items-center justify-between shadow-sm">
@@ -146,7 +147,7 @@ export function OnboardingStepper({
                       </p>
                     </div>
                   </div>
-                  {scanStep >= 3 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  {scanStep >= 3 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <AppleLoader size="sm" />}
                 </div>
 
                 <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex items-center justify-between shadow-sm">
@@ -161,7 +162,7 @@ export function OnboardingStepper({
                       </p>
                     </div>
                   </div>
-                  {scanStep >= 4 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  {scanStep >= 4 ? <CheckCircle2 className="h-5 w-5 text-[#30d158]" /> : <AppleLoader size="sm" />}
                 </div>
               </div>
             </div>

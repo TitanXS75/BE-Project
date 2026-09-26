@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Plus, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Clock, ChevronDown } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { CalendarEvent } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function CalendarEventsView() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -160,17 +161,18 @@ export function CalendarEventsView() {
                 <label className="text-xs font-semibold text-[#86868b] mb-1 block">
                   Event Category
                 </label>
-                <select
+                <AppleSelect
                   value={eventType}
-                  onChange={(e) => setEventType(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  <option value="academic">Academic Orientation</option>
-                  <option value="exam">Examination Window</option>
-                  <option value="holiday">Official Holiday</option>
-                  <option value="sports">Sports &amp; Extracurricular</option>
-                  <option value="general">General Meeting</option>
-                </select>
+                  onChange={(val) => setEventType(val as any)}
+                  options={[
+                    { value: "academic", label: "Academic Orientation" },
+                    { value: "exam", label: "Examination Window" },
+                    { value: "holiday", label: "Official Holiday" },
+                    { value: "sports", label: "Sports & Extracurricular" },
+                    { value: "general", label: "General Meeting" },
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

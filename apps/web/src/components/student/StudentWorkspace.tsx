@@ -878,26 +878,36 @@ export function StudentWorkspace({
               High-Yield Predictive Question Bank
             </span>
             <div className="rounded-3xl border border-white/10 bg-[#161618] overflow-hidden shadow-xl">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-black border-b border-white/10 text-[#86868b] uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="p-4">Predicted Examination Topic</th>
-                    <th className="p-4">Recurrence Frequency</th>
-                    <th className="p-4">Weightage</th>
-                    <th className="p-4">Exam Probability</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.06] text-[#a1a1a6]">
-                  {pyqTopics.map((topic, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-4 font-medium text-white">{topic.topic}</td>
-                      <td className="p-4 font-mono text-[#0071e3]">{topic.frequency}</td>
-                      <td className="p-4">{topic.weight}</td>
-                      <td className="p-4 font-mono text-[#30d158] font-semibold">{topic.probability}%</td>
+              {pyqTopics && pyqTopics.length > 0 ? (
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-black border-b border-white/10 text-[#86868b] uppercase text-xs tracking-wider">
+                    <tr>
+                      <th className="p-4">Predicted Examination Topic</th>
+                      <th className="p-4">Recurrence Frequency</th>
+                      <th className="p-4">Weightage</th>
+                      <th className="p-4">Exam Probability</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.06] text-[#a1a1a6]">
+                    {pyqTopics.map((topic, i) => (
+                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-4 font-medium text-white">{topic.topic}</td>
+                        <td className="p-4 font-mono text-[#0071e3]">{topic.frequency}</td>
+                        <td className="p-4">{topic.weight}</td>
+                        <td className="p-4 font-mono text-[#30d158] font-semibold">{topic.probability}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-10 flex flex-col items-center justify-center text-center gap-2">
+                  <TrendingUp className="h-8 w-8 text-[#86868b]" />
+                  <p className="text-sm font-semibold text-white">No Historical PYQs Indexed Yet</p>
+                  <p className="text-xs text-[#86868b] max-w-sm">
+                    Upload past university examination papers in Teacher Studio to compute recurring unit frequency and predict exam yield.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

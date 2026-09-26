@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Plus } from "lucide-react";
+import { Clock, Plus, ChevronDown } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { RoutineSlot, SchoolClass, Section, Course, Teacher } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
@@ -104,44 +105,37 @@ export function TimetablePlanner() {
       </div>
 
       {/* Selectors Bar */}
-      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/[0.08]">
+      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/[0.08] relative z-30">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div>
-            <label className="text-[11px] font-semibold text-[#86868b] mb-1 block">
+            <label className="text-[11px] font-semibold text-[#86868b] mb-1.5 block">
               Class
             </label>
-            <select
+            <AppleSelect
               value={selectedClassId}
-              onChange={(e) => {
-                setSelectedClassId(e.target.value);
-                const classSecs = sections.filter((s) => s.class_id === e.target.value);
+              onChange={(val) => {
+                setSelectedClassId(val);
+                const classSecs = sections.filter((s) => s.class_id === val);
                 if (classSecs.length > 0) setSelectedSectionId(classSecs[0].id);
               }}
-              className="px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-            >
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
+              options={classes.map((cls) => ({ value: cls.id, label: cls.name }))}
+              className="min-w-[160px]"
+            />
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-[#86868b] mb-1 block">
+            <label className="text-[11px] font-semibold text-[#86868b] mb-1.5 block">
               Section
             </label>
-            <select
+            <AppleSelect
               value={selectedSectionId}
-              onChange={(e) => setSelectedSectionId(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-            >
-              {availableSections.map((sec) => (
-                <option key={sec.id} value={sec.id}>
-                  {sec.name} ({sec.room_number || "Room"})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedSectionId(val)}
+              options={availableSections.map((sec) => ({
+                value: sec.id,
+                label: `${sec.name} (${sec.room_number || "Room"})`,
+              }))}
+              className="min-w-[160px]"
+            />
           </div>
         </div>
 
@@ -220,54 +214,45 @@ export function TimetablePlanner() {
             </p>
             <form onSubmit={handleAddSlot} className="flex flex-col gap-3">
               <div>
-                <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                   Day of Week
                 </label>
-                <select
+                <AppleSelect
                   value={slotDay}
-                  onChange={(e) => setSlotDay(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  {DAYS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSlotDay(val as any)}
+                  options={DAYS.map((d) => ({ value: d, label: d }))}
+                  className="w-full"
+                />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                   Course
                 </label>
-                <select
+                <AppleSelect
                   value={slotCourseId}
-                  onChange={(e) => setSlotCourseId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  {activeClassCourses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSlotCourseId(val)}
+                  options={activeClassCourses.map((c) => ({
+                    value: c.id,
+                    label: `${c.name} (${c.code})`,
+                  }))}
+                  className="w-full"
+                />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                   Instructor
                 </label>
-                <select
+                <AppleSelect
                   value={slotTeacherId}
-                  onChange={(e) => setSlotTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.first_name} {t.last_name} ({t.department || "Faculty"})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSlotTeacherId(val)}
+                  options={teachers.map((t) => ({
+                    value: t.id,
+                    label: `${t.first_name} ${t.last_name} (${t.department || "Faculty"})`,
+                  }))}
+                  className="w-full"
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-3">

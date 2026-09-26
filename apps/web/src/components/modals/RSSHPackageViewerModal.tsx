@@ -17,6 +17,7 @@ import {
   Binary
 } from "lucide-react";
 import { inspectRSSHPackage, RSSHInspectionData, API_BASE_URL } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
 
 interface RSSHPackageViewerModalProps {
   isOpen: boolean;
@@ -222,7 +223,7 @@ export function RSSHPackageViewerModal({
         {/* Content Tabs */}
         {loading ? (
           <div className="h-64 flex flex-col items-center justify-center gap-3">
-            <div className="h-6 w-6 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin" />
+            <AppleLoader size="md" />
             <span className="text-xs text-[#86868b] font-mono">
               Unpacking .rssh archive headers and reading metadata...
             </span>

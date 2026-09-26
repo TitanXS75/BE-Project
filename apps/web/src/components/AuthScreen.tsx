@@ -18,6 +18,7 @@ import {
   KeyRound,
   IdCard
 } from "lucide-react";
+import { AppleLoader } from "./ui/AppleLoader";
 
 export interface AuthUser {
   name: string;
@@ -583,7 +584,7 @@ export function AuthScreen({
                   className={`w-full py-4 px-6 mt-3 rounded-xl text-sm sm:text-base font-semibold tracking-wide transition-all shadow-lg active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${currentTheme.buttonClass} disabled:opacity-50`}
                 >
                   {isSubmitting ? (
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <AppleLoader size="sm" />
                   ) : (
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span

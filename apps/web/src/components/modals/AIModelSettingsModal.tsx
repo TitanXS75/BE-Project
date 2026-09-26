@@ -22,6 +22,7 @@ import {
   DEFAULT_CLOUD_MODELS,
   validateCloudApiKey
 } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
 
 interface AIModelSettingsModalProps {
   isOpen: boolean;
@@ -351,7 +352,7 @@ export function AIModelSettingsModal({
             >
               {isValidating ? (
                 <>
-                  <div className="h-3 w-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <AppleLoader size="xs" />
                   Testing...
                 </>
               ) : (

@@ -118,9 +118,9 @@ export function WorkspaceHeader({
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/10 text-xs text-white font-medium flex items-center gap-2.5 transition-all cursor-pointer shadow-sm"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#161618]/90 hover:bg-[#202023] border border-white/[0.12] hover:border-white/20 text-xs text-white font-medium flex items-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-black/40"
                   >
-                    <span>{activeUnit.split(":")[0]}</span>
+                    <span className="font-semibold text-white">{activeUnit.split(":")[0]}</span>
                     <span className="text-[#86868b] font-normal truncate max-w-[200px]">
                       {activeUnit.split(":")[1] || activeUnit}
                     </span>
@@ -132,9 +132,10 @@ export function WorkspaceHeader({
                   </button>
 
                   {isUnitDropdownOpen && (
-                    <div className="absolute left-0 mt-2 w-96 rounded-2xl bg-[#18181b] p-2 border border-white/20 shadow-2xl z-50 flex flex-col gap-1 animate-in fade-in duration-150">
-                      <div className="px-3 py-2 text-[11px] font-semibold text-[#86868b] uppercase tracking-wider border-b border-white/[0.08]">
-                        Syllabus Units ({unitsList.length})
+                    <div className="absolute left-0 mt-2 w-96 rounded-2xl bg-[#121214]/95 backdrop-blur-2xl p-2 border border-white/[0.12] shadow-2xl shadow-black/80 z-50 flex flex-col gap-1 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-150 max-h-96 overflow-y-auto">
+                      <div className="px-3 py-2 text-[10px] font-semibold text-[#86868b] uppercase tracking-wider border-b border-white/[0.08] flex items-center justify-between">
+                        <span>Syllabus Units ({unitsList.length})</span>
+                        <span className="text-[#0071e3] font-mono">Live Grounding</span>
                       </div>
                       {unitsList.map((unitObj, idx) => {
                         const isSelected = activeUnit === unitObj.title;
@@ -145,20 +146,20 @@ export function WorkspaceHeader({
                               setActiveUnit(unitObj.title);
                               setIsUnitDropdownOpen(false);
                             }}
-                            className={`w-full text-left p-3 rounded-xl text-xs flex items-center justify-between transition-all cursor-pointer ${
+                            className={`w-full text-left p-3 rounded-xl text-xs flex items-center justify-between transition-all cursor-pointer border ${
                               isSelected
-                                ? "bg-[#27272a] text-white font-semibold"
-                                : "text-[#a1a1a6] hover:bg-white/[0.06] hover:text-white"
+                                ? "bg-[#0071e3]/15 border-[#0071e3]/40 text-white font-semibold shadow-sm"
+                                : "border-transparent text-[#a1a1a6] hover:bg-white/[0.06] hover:border-white/[0.08] hover:text-white"
                             }`}
                           >
                             <div className="flex flex-col gap-0.5">
                               <span className="font-medium text-white">{unitObj.title}</span>
-                              <span className="text-[11px] text-[#86868b] truncate max-w-[280px]">
+                              <span className="text-[11px] text-[#86868b] truncate max-w-[270px]">
                                 {unitObj.topics}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-black text-[#86868b]">
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/60 border border-white/[0.08] text-[#86868b]">
                                 {unitObj.chunks} Chunks
                               </span>
                               {isSelected && <Check className="h-4 w-4 text-[#0071e3]" />}
@@ -179,7 +180,7 @@ export function WorkspaceHeader({
       <div className="relative" ref={actionsMenuRef}>
         <button
           onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
-          className="px-3.5 py-1.5 rounded-xl bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/10 text-xs text-white font-medium flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+          className="px-3.5 py-1.5 rounded-xl bg-[#161618]/90 hover:bg-[#202023] border border-white/[0.12] hover:border-white/20 text-xs text-white font-medium flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-black/40"
         >
           <SlidersHorizontal className="h-3.5 w-3.5 text-[#0071e3]" />
           <span>Workspace Menu</span>
@@ -191,9 +192,9 @@ export function WorkspaceHeader({
         </button>
 
         {isActionsMenuOpen && (
-          <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#18181b] p-2 border border-white/20 shadow-2xl z-50 flex flex-col gap-1 animate-in fade-in duration-150">
+          <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#121214]/95 backdrop-blur-2xl p-2 border border-white/[0.12] shadow-2xl shadow-black/80 z-50 flex flex-col gap-1 ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-150">
             {/* PORTAL SECTION */}
-            <div className="px-3 py-2 text-[11px] font-semibold text-[#86868b] uppercase tracking-wider border-b border-white/[0.08] flex items-center justify-between">
+            <div className="px-3 py-2 text-[10px] font-semibold text-[#86868b] uppercase tracking-wider border-b border-white/[0.08] flex items-center justify-between">
               <span>Portals</span>
               <span className="text-[10px] text-emerald-400 font-mono">
                 {portalView === "erp" || mode === "admin" ? "ERP Portal Active" : "Learning Workspace"}
@@ -207,7 +208,7 @@ export function WorkspaceHeader({
                   setIsActionsMenuOpen(false);
                   onSwitchToErp();
                 }}
-                className="w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-3 bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/10 transition-all cursor-pointer group"
+                className="w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all cursor-pointer group"
               >
                 <div className="h-8 w-8 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center flex-shrink-0 text-[#0071e3]">
                   <ShieldCheck className="h-4 w-4" />
@@ -231,7 +232,7 @@ export function WorkspaceHeader({
                   setIsActionsMenuOpen(false);
                   onReturnFromErp();
                 }}
-                className="w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-3 bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/10 transition-all cursor-pointer group"
+                className="w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all cursor-pointer group"
               >
                 <div className="h-8 w-8 rounded-lg bg-black/60 border border-white/10 flex items-center justify-center flex-shrink-0 text-[#0071e3]">
                   <FolderOpen className="h-4 w-4" />

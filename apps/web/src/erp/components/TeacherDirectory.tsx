@@ -8,9 +8,11 @@ import {
   BookOpen,
   Calendar,
   Building,
+  ChevronDown,
 } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { Teacher } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function TeacherDirectory() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -99,7 +101,7 @@ export function TeacherDirectory() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-white/[0.08]">
+      <div className="apple-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-white/[0.08] relative z-30">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b]" />
           <input
@@ -114,18 +116,15 @@ export function TeacherDirectory() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Building className="h-3.5 w-3.5 text-[#86868b]" />
           <span className="text-xs text-[#86868b]">Department:</span>
-          <select
+          <AppleSelect
             value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-          >
-            <option value="all">All Departments ({teachers.length})</option>
-            {departments.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedDept(val)}
+            options={[
+              { value: "all", label: `All Departments (${teachers.length})` },
+              ...departments.map((d) => ({ value: d, label: d })),
+            ]}
+            className="min-w-[190px]"
+          />
         </div>
       </div>
 
@@ -276,18 +275,19 @@ export function TeacherDirectory() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+                <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
                   Gender
                 </label>
-                <select
+                <AppleSelect
                   value={gender}
-                  onChange={(e) => setGender(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
+                  onChange={(val) => setGender(val as any)}
+                  options={[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "other", label: "Other" },
+                  ]}
+                  className="w-full"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-4">

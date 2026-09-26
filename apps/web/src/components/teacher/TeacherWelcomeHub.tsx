@@ -15,6 +15,7 @@ import {
   X
 } from "lucide-react";
 import { createSubjectWorkspace } from "@/lib/api";
+import { AppleLoader } from "../ui/AppleLoader";
 
 interface SubjectItem {
   name: string;
@@ -288,7 +289,7 @@ export function TeacherWelcomeHub({
                 >
                   {isCreating ? (
                     <>
-                      <div className="h-3 w-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <AppleLoader size="xs" />
                       Creating Workspace...
                     </>
                   ) : (

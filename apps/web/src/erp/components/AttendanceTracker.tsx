@@ -4,9 +4,11 @@ import {
   Calendar,
   Save,
   CheckCircle2,
+  ChevronDown
 } from "lucide-react";
 import { ErpApi } from "../supabase";
 import { Student, SchoolClass, Section, AttendanceRecord } from "../types";
+import { AppleSelect } from "@/components/ui/AppleSelect";
 
 export function AttendanceTracker() {
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -141,47 +143,40 @@ export function AttendanceTracker() {
       )}
 
       {/* Selectors Bar */}
-      <div className="apple-card p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-4 border border-white/[0.08]">
+      <div className="apple-card p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-4 border border-white/[0.08] relative z-30">
         <div>
-          <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+          <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
             Academic Class
           </label>
-          <select
+          <AppleSelect
             value={selectedClassId}
-            onChange={(e) => {
-              setSelectedClassId(e.target.value);
-              const classSecs = sections.filter((s) => s.class_id === e.target.value);
+            onChange={(val) => {
+              setSelectedClassId(val);
+              const classSecs = sections.filter((s) => s.class_id === val);
               if (classSecs.length > 0) setSelectedSectionId(classSecs[0].id);
             }}
-            className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-          >
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+            options={classes.map((cls) => ({ value: cls.id, label: cls.name }))}
+            className="w-full"
+          />
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+          <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
             Target Section
           </label>
-          <select
+          <AppleSelect
             value={selectedSectionId}
-            onChange={(e) => setSelectedSectionId(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-[#1c1c1e] border border-white/10 text-white text-xs focus:outline-none focus:border-[#0071e3] cursor-pointer"
-          >
-            {availableSections.map((sec) => (
-              <option key={sec.id} value={sec.id}>
-                {sec.name} ({sec.room_number || "Room"})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedSectionId(val)}
+            options={availableSections.map((sec) => ({
+              value: sec.id,
+              label: `${sec.name} (${sec.room_number || "Room"})`,
+            }))}
+            className="w-full"
+          />
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-[#86868b] mb-1 block">
+          <label className="text-xs font-semibold text-[#86868b] mb-1.5 block">
             Attendance Date
           </label>
           <div className="relative">

@@ -250,39 +250,7 @@ export default function Home() {
   const [quizDifficulty, setQuizDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
-
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([
-    {
-      id: 1,
-      unit: "Unit 1",
-      difficulty: "Medium",
-      question: "Which regularization method is most effective when feature selection is desired by driving weights strictly to zero?",
-      options: [
-        "L2 Regularization (Ridge Regression)",
-        "L1 Regularization (Lasso Regression)",
-        "Dropout with p=0.5",
-        "Batch Normalization"
-      ],
-      correct: 1,
-      explanation: "L1 regularization uses an L1 penalty whose constraint geometry intersects axes at zeros, naturally producing sparse weight vectors.",
-      source: "Prescribed Textbook Ch. 3.2, p. 142"
-    },
-    {
-      id: 2,
-      unit: "Unit 1",
-      difficulty: "Hard",
-      question: "In clustering algorithms, what does Within-Cluster Sum of Squares (WCSS) evaluate?",
-      options: [
-        "The Silhouette coefficient across iterations",
-        "Within-Cluster compactness and variance",
-        "The classification cross-entropy loss",
-        "The determinant of the covariance matrix"
-      ],
-      correct: 1,
-      explanation: "Within-Cluster Sum of Squares (WCSS) measures cluster compactness; minimizing WCSS ensures tight groupings.",
-      source: "Syllabus Grounding"
-    }
-  ]);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
 
   const handleGenerateQuiz = async () => {
     setGeneratingQuiz(true);
@@ -370,19 +338,8 @@ export default function Home() {
   const [evaluatingTeachBack, setEvaluatingTeachBack] = useState(false);
 
   // ─── PYQ STATE (DYNAMIC) ───
-  const [pyqTopics, setPyqTopics] = useState([
-    { topic: "Regularization & Parameter Sparsity", frequency: "5 / 5 Years", weight: "10 Marks", probability: 96, trend: "High Yield" },
-    { topic: "Generalization Bounds & Error Proof", frequency: "4 / 5 Years", weight: "8 Marks", probability: 91, trend: "High Yield" },
-    { topic: "Optimization Algorithms & Convergence", frequency: "4 / 5 Years", weight: "10 Marks", probability: 88, trend: "High Yield" },
-    { topic: "Support Vector Machines & Dual Form", frequency: "3 / 5 Years", weight: "12 Marks", probability: 82, trend: "Moderate" },
-    { topic: "Dimensionality Reduction & Matrix Proof", frequency: "3 / 5 Years", weight: "10 Marks", probability: 79, trend: "Moderate" }
-  ]);
-  const [unitDistribution, setUnitDistribution] = useState<UnitDistributionItem[]>([
-    { unit_number: 1, title: "Foundations & Linear Models", historical_marks_weightage_pct: 25.0, yield_level: "High", questions_count: 12 },
-    { unit_number: 2, title: "Regularization & Optimization", historical_marks_weightage_pct: 30.0, yield_level: "Critical", questions_count: 15 },
-    { unit_number: 3, title: "Supervised Learning Algorithms", historical_marks_weightage_pct: 25.0, yield_level: "High", questions_count: 11 },
-    { unit_number: 4, title: "Unsupervised & Clustering", historical_marks_weightage_pct: 20.0, yield_level: "Medium", questions_count: 7 }
-  ]);
+  const [pyqTopics, setPyqTopics] = useState<any[]>([]);
+  const [unitDistribution, setUnitDistribution] = useState<UnitDistributionItem[]>([]);
 
   // ─── TEACHER MODE STATES ───
   const [bloomsTaxonomy, setBloomsTaxonomy] = useState({
