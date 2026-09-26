@@ -1,0 +1,67 @@
+{
+  "name": "axiom-desktop",
+  "version": "1.0.0",
+  "description": "Axiom - Local-First, Air-Gapped Curriculum-Aware Learning Desktop Container",
+  "main": "src/main.js",
+  "author": "Axiom Platform",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "pack:win": "electron-builder --win --x64"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ai.axiom.desktop",
+    "productName": "Axiom",
+    "copyright": "Copyright © 2026 Axiom Platform",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "fileAssociations": [
+        {
+          "ext": "rssh",
+          "name": "Axiom Subject Package",
+          "description": "Axiom Relational Syllabus Subject Hub Archive",
+          "icon": "assets/rssh-file.ico",
+          "role": "Editor"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Axiom"
+    }
+  }
+}

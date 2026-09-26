@@ -11,6 +11,9 @@
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "python -m uvicorn app.main:app --app-dir apps/local-api --reload --port 8000",
     "dev": "npm run dev:web",
+    "dev:desktop": "npm run dev --workspace=apps/desktop",
+    "start:desktop": "npm run start --workspace=apps/desktop",
+    "package:desktop": "npm run dist --workspace=apps/desktop",
     "build:web": "npm run build --workspace=apps/web",
     "lint:web": "npm run lint --workspace=apps/web"
   },

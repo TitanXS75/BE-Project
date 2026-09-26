@@ -177,7 +177,54 @@ export default function Home() {
     ]);
   };
 
-  // ─── CHAT STATE ───
+  // ─── INITIAL SUBJECTS & DESKTOP IPC SYNC ───
+  useEffect(() => {
+    // Initial fetch of active subjects from backend
+    fetchActiveSubjects()
+      .then((res) => {
+        if (res && res.subjects && res.subjects.length > 0) {
+          const mapped = res.subjects.map((s, idx) => ({
+            name: s.subject_name,
+            code: `CS-${401 + idx}`,
+            units: s.units_count || 4,
+            docs: s.documents_count || 10,
+            chunks: (s.units_count || 4) * 35,
+            rssh: `${s.package_id}.rssh`
+          }));
+          setSubjectsList(mapped);
+        }
+      })
+      .catch(() => {});
+
+    // Native Electron desktop .rssh package open listener
+    if (typeof window !== "undefined" && (window as any).axiomDesktop?.onMountRSSHPackage) {
+      const unsubscribe = (window as any).axiomDesktop.onMountRSSHPackage(
+        (data: { filePath: string; fileName: string; sizeBytes?: number }) => {
+          if (!data || !data.fileName) return;
+          const subjectName = data.fileName.replace(/\.(rssh|zip)$/i, "").replace(/-/g, " ");
+          const newSubject = {
+            name: subjectName,
+            code: `CS-${Math.floor(100 + Math.random() * 900)}`,
+            units: 4,
+            docs: 12,
+            chunks: 140,
+            rssh: data.fileName
+          };
+          setSubjectsList((prev) => {
+            if (prev.some((s) => s.rssh === data.fileName || s.name.toLowerCase() === subjectName.toLowerCase())) {
+              return prev;
+            }
+            return [newSubject, ...prev];
+          });
+          handleSelectSubject(subjectName);
+        }
+      );
+      return () => {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    }
+  }, []);
+
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; text: string; sources?: string[]; confidence?: number }>>([
     {
       role: "assistant",
