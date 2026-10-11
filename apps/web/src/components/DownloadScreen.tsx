@@ -81,24 +81,24 @@ export function DownloadScreen({ onBack, onStart, onHowItWorks }: DownloadScreen
         </div>
 
         {/* Primary Download Card - Expanded Full Width */}
-        <div className="apple-card p-6 sm:p-10 rounded-3xl border border-white/10 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8 w-full">
-          <div className="flex items-center gap-6">
-            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-[#1c1c1e] border border-white/10 flex items-center justify-center text-[#0071e3] shadow-inner shrink-0">
-              <Monitor className="h-10 w-10 sm:h-12 sm:w-12" />
+        <div className="apple-card p-5 sm:p-10 rounded-3xl border border-white/10 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 w-full">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+            <div className="h-16 w-16 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-[#1c1c1e] border border-white/10 flex items-center justify-center text-[#0071e3] shadow-inner shrink-0">
+              <Monitor className="h-8 w-8 sm:h-12 sm:w-12" />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                <h3 className="text-xl sm:text-3xl font-bold text-white tracking-tight">
                   Windows Installer (.exe)
                 </h3>
                 <span className="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full bg-[#30d158]/20 text-[#30d158] border border-[#30d158]/30">
                   v1.0.0-beta
                 </span>
               </div>
-              <p className="text-sm sm:text-base text-[#86868b] mt-1.5">
+              <p className="text-xs sm:text-base text-[#86868b] mt-1.5">
                 For Windows 10 &amp; 11 (64-bit) • Standalone Electron Package
               </p>
-              <div className="flex flex-wrap items-center gap-3 mt-3 text-xs sm:text-sm text-[#86868b] font-mono">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-3 mt-2.5 sm:mt-3 text-xs sm:text-sm text-[#86868b] font-mono">
                 <span>Size: ~142 MB</span>
                 <span>•</span>
                 <span>Type: x64 Setup</span>

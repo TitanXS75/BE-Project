@@ -17,8 +17,8 @@ export function SystemCheckScreen({
   onContinue
 }: SystemCheckScreenProps) {
   return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col items-center justify-center p-6 max-w-xl mx-auto w-full">
-      <div className="w-full apple-card p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col gap-6">
+    <div className="min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center px-4 py-8 max-w-xl mx-auto">
+      <div className="w-full apple-card p-5 sm:p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col gap-6 my-auto">
         <div className="text-center">
           <div className="h-12 w-12 rounded-2xl bg-[#1c1c1e] flex items-center justify-center text-[#0071e3] mx-auto mb-3">
             <Laptop className="h-6 w-6" />

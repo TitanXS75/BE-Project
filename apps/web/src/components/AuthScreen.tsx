@@ -197,29 +197,35 @@ export function AuthScreen({
   ];
 
   return (
-    <div className="min-h-screen w-screen bg-black text-[#f5f5f7] flex flex-col justify-start items-center px-4 sm:px-8 lg:px-12 pl-20 sm:pl-24 xl:pl-8 pt-6 pb-12 select-none antialiased relative">
+    <div className="min-h-[100dvh] w-full bg-black text-[#f5f5f7] flex flex-col justify-start items-center px-4 sm:px-6 lg:px-10 py-4 sm:py-8 select-none antialiased relative overflow-x-hidden">
       {/* Dynamic Ambient Blur Glow */}
       <div
         className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] rounded-full blur-[160px] pointer-events-none transition-all duration-700 opacity-60"
         style={{ backgroundColor: currentTheme.glowColor }}
       />
 
-      {/* ─── TOP-LEFT BACK BUTTON (ON SAME TOP LINE AS LOGIN BOX) ─── */}
-      <button
-        type="button"
-        onClick={onBackToRoles}
-        className="fixed top-6 left-6 sm:left-8 z-50 flex items-center gap-2 px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-full bg-[#161618]/90 hover:bg-[#1c1c1e] text-xs sm:text-sm font-medium text-[#86868b] hover:text-white border border-white/10 backdrop-blur-xl transition-all cursor-pointer shadow-xl active:scale-95"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        <span>Back</span>
-      </button>
+      {/* ─── TOP NAVIGATION ROW ─── */}
+      <div className="w-full max-w-[1240px] mx-auto flex items-center justify-between mb-4 sm:mb-6 z-20">
+        <button
+          type="button"
+          onClick={onBackToRoles}
+          className="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#161618]/90 hover:bg-[#1c1c1e] text-xs sm:text-sm font-medium text-[#86868b] hover:text-white border border-white/10 backdrop-blur-xl transition-all cursor-pointer shadow-xl active:scale-95"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>Change Role</span>
+        </button>
 
-      {/* ─── MAIN AUTH CARD CONTAINER (EXPANDED & ALIGNED AT TOP-6) ─── */}
+        <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border backdrop-blur-md ${currentTheme.badgeColor}`}>
+          {currentTheme.name}
+        </span>
+      </div>
+
+      {/* ─── MAIN AUTH CARD CONTAINER ─── */}
       <main className="w-full max-w-[1240px] mx-auto relative z-10">
         <div className="w-full rounded-3xl bg-[#161618]/90 border border-white/10 backdrop-blur-2xl shadow-[0_24px_60px_rgba(0,0,0,0.85)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all duration-300">
           
           {/* ─── LEFT SHOWCASE PANEL ─── */}
-          <div className="lg:col-span-5 bg-[#0e0e10] p-7 sm:p-8 lg:p-9 border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between gap-5 relative overflow-hidden transition-all duration-300">
+          <div className="lg:col-span-5 bg-[#0e0e10] p-5 sm:p-7 lg:p-9 border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between gap-5 relative overflow-hidden transition-all duration-300">
             <div className="flex flex-col gap-4 sm:gap-5 relative z-10">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-2xl bg-black border border-white/10 flex items-center justify-center shadow-inner">
@@ -236,11 +242,11 @@ export function AuthScreen({
               </div>
 
               {/* 3D Visual Asset Showcase (Consistent size in signin & signup) */}
-              <div className="w-full h-44 sm:h-52 lg:h-56 rounded-2xl bg-black/60 border border-white/[0.08] relative overflow-hidden flex items-center justify-center p-3.5 shadow-inner group">
+              <div className="w-full h-36 sm:h-48 lg:h-56 rounded-2xl bg-black/60 border border-white/[0.08] relative overflow-hidden flex items-center justify-center p-3 shadow-inner group">
                 <img
                   src="/assets/3d/auth_security_3d.jpg"
                   alt="Axiom Security Shield"
-                  className="max-h-full max-w-full object-contain rounded-xl drop-shadow-2xl group-hover:scale-105 transition-transform duration-500"
+                  className="max-h-[110px] sm:max-h-full max-w-full object-contain rounded-xl drop-shadow-2xl group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
 
@@ -307,7 +313,7 @@ export function AuthScreen({
           </div>
 
           {/* ─── RIGHT FORM PANEL (Sign In & Sign Up Form - Spacious) ─── */}
-          <div className="lg:col-span-7 p-7 sm:p-9 lg:p-11 flex flex-col justify-between gap-5 sm:gap-6 transition-all duration-300">
+          <div className="lg:col-span-7 p-5 sm:p-8 lg:p-11 flex flex-col justify-between gap-5 sm:gap-6 transition-all duration-300">
             <div>
               {/* Header Title and Tab Toggle */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-4 border-b border-white/[0.08]">
@@ -605,12 +611,12 @@ export function AuthScreen({
             </div>
 
             {/* Privacy & Air-Gap Compliance Note */}
-            <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs sm:text-sm text-[#86868b]">
+            <div className="pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-[#86868b]">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-[#30d158]" />
+                <CheckCircle2 className="h-4 w-4 text-[#30d158] shrink-0" />
                 <span>Zero telemetry. Relational data stored locally in subject.db.</span>
               </div>
-              <span className="font-mono text-[11px]">Axiom v2.4</span>
+              <span className="font-mono text-[11px] self-end sm:self-auto">Axiom v2.4</span>
             </div>
           </div>
 

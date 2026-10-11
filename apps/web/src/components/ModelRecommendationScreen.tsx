@@ -31,8 +31,8 @@ export function ModelRecommendationScreen({
   onContinue
 }: ModelRecommendationScreenProps) {
   return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col items-center justify-center p-6 max-w-2xl mx-auto w-full">
-      <div className="w-full apple-card p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col gap-4">
+    <div className="min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto">
+      <div className="w-full apple-card p-4 sm:p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col gap-4 my-auto">
         <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
           <div>
             <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">

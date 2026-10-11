@@ -100,8 +100,8 @@ export function ArchitectureScreen({ onBack, onStart }: ArchitectureScreenProps)
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1">
-          <div className="p-1 rounded-2xl flex gap-1 bg-[#161618] border border-white/10">
+        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-2 max-w-full px-1">
+          <div className="p-1 rounded-2xl flex gap-1 bg-[#161618] border border-white/10 shrink-0">
             <button
               onClick={() => setActiveTab("realtime")}
               className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 ${

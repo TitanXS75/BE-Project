@@ -60,22 +60,22 @@ export function OnboardingStepper({
   const GENDER_OPTIONS = ["Male", "Female"];
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col items-center justify-between p-4 sm:p-6 bg-black relative select-none antialiased">
+    <div className="min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden flex flex-col items-center justify-between px-3 sm:px-6 py-4 sm:py-6 bg-black relative select-none antialiased">
       {/* ─── TOP HEADER (CENTERED CLEAN TITLE) ─── */}
-      <header className="w-full max-w-5xl mx-auto text-center pt-2 pb-2">
+      <header className="w-full max-w-5xl mx-auto text-center pt-1 pb-3 px-2">
         <span className="text-xs font-bold text-[#0071e3] uppercase tracking-wider">
           Guided System Setup
         </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
+        <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
           Configure Your Axiom Environment
         </h1>
-        <p className="text-xs sm:text-sm text-[#86868b] mt-1">
+        <p className="text-xs sm:text-sm text-[#86868b] mt-1 max-w-xl mx-auto">
           Calibrate local hardware, inference models, and your profile details.
         </p>
       </header>
 
       {/* ─── ENLARGED STEPPER BOX ─── */}
-      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col justify-center">
+      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col justify-center my-2 sm:my-auto">
         <Stepper
           initialStep={1}
           onStepChange={(step) => {
@@ -86,10 +86,10 @@ export function OnboardingStepper({
           firstStepBackButtonText="Change Role"
           backButtonText="Previous"
           nextButtonText="Continue"
-          stepCircleContainerClassName="!max-w-5xl !bg-[#161618]/95 !backdrop-blur-2xl !border-white/10 !rounded-3xl shadow-2xl"
-          stepContainerClassName="!p-5 sm:!p-7"
-          footerClassName="!pt-4 !pb-6 !px-8 sm:!px-12"
-          contentClassName="!px-8 sm:!px-12 !pb-3 min-h-[340px] sm:min-h-[360px]"
+          stepCircleContainerClassName="!max-w-5xl !w-full !bg-[#161618]/95 !backdrop-blur-2xl !border-white/10 !rounded-2xl sm:!rounded-3xl shadow-2xl"
+          stepContainerClassName="!p-3.5 sm:!p-5 md:!p-7"
+          footerClassName="!pt-3 !pb-4 sm:!pb-6 !px-4 sm:!px-8 md:!px-12"
+          contentClassName="!px-4 sm:!px-8 md:!px-12 !pb-3 min-h-[280px] sm:min-h-[340px]"
         >
           {/* STEP 1: SYSTEM & HARDWARE DIAGNOSTICS */}
           <Step>
