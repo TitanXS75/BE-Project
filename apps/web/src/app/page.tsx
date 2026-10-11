@@ -680,7 +680,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-black text-[#f5f5f7] antialiased flex flex-col font-sans selection:bg-[#0071e3] selection:text-white">
+    <div className="min-h-screen w-full overflow-x-hidden bg-black text-[#f5f5f7] antialiased flex flex-col font-sans selection:bg-[#0071e3] selection:text-white">
       {/* ─── SCREEN 1: WELCOME ─── */}
       {currentScreen === "welcome" && (
         <WelcomeScreen

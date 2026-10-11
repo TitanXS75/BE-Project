@@ -1,4 +1,4 @@
-"""Local Embedding Generation Engine supporting Ollama Embeddings and Deterministic Local Vectors."""
+"""Local Embedding Generation Engine supporting LangChain OllamaEmbeddings and Deterministic Local Vectors."""
 
 import httpx
 import math
@@ -6,15 +6,45 @@ import hashlib
 from typing import List
 from app.config import settings
 
+try:
+    from langchain_ollama import OllamaEmbeddings
+except ImportError:
+    try:
+        from langchain_community.embeddings import OllamaEmbeddings
+    except ImportError:
+        OllamaEmbeddings = None
+
 
 class EmbeddingGenerator:
+    """Local embedding generator using LangChain OllamaEmbeddings with deterministic fallback."""
     def __init__(self, model_name: str = "all-minilm", dimension: int = 384):
         self.model_name = model_name
         self.dimension = dimension
+        if OllamaEmbeddings is not None:
+            try:
+                self._langchain_embedder = OllamaEmbeddings(
+                    model=model_name,
+                    base_url=settings.OLLAMA_BASE_URL
+                )
+            except Exception:
+                self._langchain_embedder = None
+        else:
+            self._langchain_embedder = None
 
     async def generate_embedding(self, text: str) -> List[float]:
         """Generates embedding vector for a single text chunk."""
-        # 1. Attempt to generate using local Ollama daemon
+        # 1. Attempt using LangChain OllamaEmbeddings
+        if self._langchain_embedder is not None:
+            try:
+                emb = await self._langchain_embedder.aembed_query(text)
+                if emb and len(emb) == self.dimension:
+                    return emb
+                elif emb:
+                    return self._adjust_dimension(emb, self.dimension)
+            except Exception:
+                pass
+
+        # 2. Direct Ollama API call
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
@@ -26,12 +56,11 @@ class EmbeddingGenerator:
                     if emb and len(emb) == self.dimension:
                         return emb
                     elif emb:
-                        # Pad or trim to expected dimension
                         return self._adjust_dimension(emb, self.dimension)
         except Exception:
             pass
 
-        # 2. Fallback to deterministic local text embedding
+        # 3. Fallback to deterministic local text embedding
         return self._generate_deterministic_embedding(text, self.dimension)
 
     async def generate_batch(self, texts: List[str]) -> List[List[float]]:

@@ -6,6 +6,7 @@ import json
 import httpx
 from app.config import settings
 from app.rag.retrieval.retriever import HybridRetriever
+from app.rag.retrieval.chains import CurriculumRAGChain
 
 router = APIRouter()
 
@@ -277,42 +278,67 @@ async def chat_stream(request: ChatStreamRequest):
                 # If cloud fails, gracefully fall back
                 pass
 
-        # Option B: Local Ollama Model
+        # Option B: Local Ollama Model via LangChain LCEL Chain
         if not stream_successful:
-            prompt_payload = {
-                "model": active_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": request.message}
-                ],
-                "stream": True,
-                "options": {
-                    "temperature": temperature
-                }
-            }
             try:
-                async with httpx.AsyncClient(timeout=120.0) as client:
-                    async with client.stream(
-                        "POST",
-                        f"{settings.OLLAMA_BASE_URL}/api/chat",
-                        json=prompt_payload
-                    ) as response:
-                        if response.status_code == 200:
-                            stream_successful = True
-                            async for line in response.aiter_lines():
-                                if line:
-                                    try:
-                                        data = json.loads(line)
-                                        msg_chunk = data.get("message", {}).get("content", "")
-                                        if msg_chunk:
-                                            yield f"event: chunk\ndata: {json.dumps({'text': msg_chunk})}\n\n"
-                                        if data.get("done", False):
-                                            yield f"event: citations\ndata: {json.dumps({'sources': citations})}\n\n"
-                                            yield f"event: done\ndata: {{}}\n\n"
-                                    except Exception:
-                                        pass
+                rag_chain = CurriculumRAGChain(
+                    subject_id=request.subject_id,
+                    model_name=active_model,
+                    temperature=temperature
+                )
+                marks_ctx = request.parameters.marks_context if request.parameters else None
+                async for chunk in rag_chain.astream_rag(
+                    question=request.message,
+                    unit_id=request.unit_id,
+                    marks_context=marks_ctx,
+                    retrieved_chunks=retrieved_chunks
+                ):
+                    stream_successful = True
+                    yield f"event: chunk\ndata: {json.dumps({'text': chunk})}\n\n"
+
+                if stream_successful:
+                    yield f"event: citations\ndata: {json.dumps({'sources': citations})}\n\n"
+                    yield f"event: done\ndata: {{}}\n\n"
+                    return
             except Exception:
                 stream_successful = False
+
+            # Direct fallback if LangChain LCEL had an issue
+            if not stream_successful:
+                prompt_payload = {
+                    "model": active_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": request.message}
+                    ],
+                    "stream": True,
+                    "options": {
+                        "temperature": temperature
+                    }
+                }
+                try:
+                    async with httpx.AsyncClient(timeout=120.0) as client:
+                        async with client.stream(
+                            "POST",
+                            f"{settings.OLLAMA_BASE_URL}/api/chat",
+                            json=prompt_payload
+                        ) as response:
+                            if response.status_code == 200:
+                                stream_successful = True
+                                async for line in response.aiter_lines():
+                                    if line:
+                                        try:
+                                            data = json.loads(line)
+                                            msg_chunk = data.get("message", {}).get("content", "")
+                                            if msg_chunk:
+                                                yield f"event: chunk\ndata: {json.dumps({'text': msg_chunk})}\n\n"
+                                            if data.get("done", False):
+                                                yield f"event: citations\ndata: {json.dumps({'sources': citations})}\n\n"
+                                                yield f"event: done\ndata: {{}}\n\n"
+                                        except Exception:
+                                            pass
+                except Exception:
+                    stream_successful = False
 
         # Option C: Fallback Grounded Syllabus Engine
         if not stream_successful:

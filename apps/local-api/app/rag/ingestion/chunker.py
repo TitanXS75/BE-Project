@@ -1,10 +1,19 @@
-"""Hierarchical Semantic Text Chunker for academic documents."""
+"""Hierarchical Semantic Text Chunker for academic documents using LangChain."""
 
 import re
 from typing import List, Dict, Any, Optional
 
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    try:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+    except ImportError:
+        RecursiveCharacterTextSplitter = None
+
 
 class SemanticChunker:
+    """Document chunker powered by LangChain's RecursiveCharacterTextSplitter with fallback."""
     def __init__(
         self,
         chunk_size: int = 800,
@@ -14,6 +23,17 @@ class SemanticChunker:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.separator = separator
+        
+        if RecursiveCharacterTextSplitter is not None:
+            self._splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                separators=["\n\n", "\n", ". ", "? ", "! ", " ", ""],
+                length_function=len,
+                is_separator_regex=False
+            )
+        else:
+            self._splitter = None
 
     def chunk_pages(
         self,
@@ -53,7 +73,15 @@ class SemanticChunker:
         if not text or len(text.strip()) == 0:
             return []
 
-        # Split by paragraph first
+        # 1. Use LangChain RecursiveCharacterTextSplitter when available
+        if self._splitter is not None:
+            try:
+                split_chunks = self._splitter.split_text(text)
+                return [c.strip() for c in split_chunks if len(c.strip()) > 20]
+            except Exception:
+                pass
+
+        # 2. Fallback to paragraph/sentence splitting
         paragraphs = [p.strip() for p in text.split(self.separator) if p.strip()]
         chunks: List[str] = []
         current_chunk = ""
